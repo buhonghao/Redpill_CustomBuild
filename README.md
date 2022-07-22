@@ -28,7 +28,7 @@
        - mac:  多个请以 "," 间隔
        - pid:  
        - vid:  
-       - ext:  多个请以 "," 间隔
+       - ext:  多个请以 "," 间隔, [可选项](https://raw.githubusercontent.com/pocopico/rp-ext/main/exts)
        - jun: <"0" | "1">    default: "0"
 
 title:
@@ -39,5 +39,5 @@ body:
 
 
 ## 鸣谢
-https://github.com/acidanthera/OpenCorePkg  
-https://gitee.com/btwise/OpenCore_NO_ACPI  
+https://github.com/pocopico/redpill-load  
+
