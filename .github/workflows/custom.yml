@@ -1,0 +1,461 @@
+#
+# Copyright (C) 2022 Ing <https://github.com/wjz304>
+# 
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+#
+
+
+name: Custom Redpill
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'DS3615xs DS3617xs DS918+ DS920+ DS3622xs+'
+        required: true
+        default: 'DS918+' 
+        type: choice
+        options:
+        - DS3615xs
+        - DS3617xs
+        - DS918+
+        - DS920+
+        - DS3622xs+
+
+      version:
+        description: '7.1.0-42661 7.0.1-42218'
+        required: true
+        default: '7.1.0-42661' 
+        type: choice
+        options:
+        - 7.1.0-42661
+        - 7.0.1-42218
+
+      sataportmap: 
+        description: 'SataPortMap'
+        required: false
+        default: ''
+        type: string
+
+      diskidxmap: 
+        description: 'DiskIdxMap'
+        required: false
+        default: ''
+        type: string
+
+      sn: 
+        description: 'sn'
+        required: false
+        default: ''
+        type: string
+
+      mac: 
+        description: 'mac'
+        required: false
+        default: ''
+        type: string
+
+      pid: 
+        description: 'pid'
+        required: false
+        default: '0x0001'
+        type: string
+
+      vid: 
+        description: 'vid'
+        required: false
+        default: '0x46f4'
+        type: string
+
+      ext: 
+        description: 'ext'
+        required: false
+        default: ''
+        type: string
+
+      jun:
+        description: 'jun'
+        required: true
+        default: '0' 
+        type: choice
+        options:
+        - '0'
+        - '1'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.1.2
+
+      - name: Set up Python 3
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Checkout
+        uses: actions/checkout@main
+
+      - name: Init Env
+        run : |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          sudo timedatectl set-timezone "Asia/Shanghai"
+
+      - name: Get Info
+        uses: jannekem/run-python-script-action@v1.2
+        id: info
+        with:
+          script: |
+            import os, re, json, string
+
+            if __name__ == '__main__':
+
+                issues = 'false'
+                iscustom = 'true'
+
+                platform = 'DS918+'
+                version = '7.1.0-42661'
+                sataportmap = ''
+                diskidxmap = ''
+                sn = ''
+                mac = ''
+                pid = ''
+                vid = ''
+                ext = ''
+                jun = '0'
+
+                if '${{ github.event_name }}' == 'issues':
+                    if '${{ github.event.issue.title }}'.lower().startswith('custom'):
+                        issues = 'true'
+
+                        body = {}
+                        body = json.loads('${{ github.event.issue.body }}')
+                        
+                        if len(body) == 0:
+                            iscustom = 'false'
+
+                        if 'platform' in body:
+                            if body['platform'] in ['DS3615xs', 'DS3617xs', 'DS918+', 'DS920+', 'DS3622xs+']:
+                                platform = body['platform']
+                            else:
+                                iscustom = 'false'
+
+                        if 'version' in body:
+                            if body['version'] in ['7.1.0-42661', '7.0.1-42218']:
+                                version = body['version']
+                            else:
+                                iscustom = 'false'
+
+                        if 'sataportmap' in body:
+                            if body['sataportmap'].isdigit():
+                                sataportmap = body['sataportmap']
+                            else:
+                                iscustom = 'false'
+
+                        if 'diskidxmap' in body:
+                            if all(c in string.hexdigits for c in body['diskidxmap']) and len(body['diskidxmap']) == 2 * len(body['sataportmap']):
+                                diskidxmap = body['diskidxmap']
+                            else:
+                                iscustom = 'false'
+
+                        if 'sn' in body:
+                            if body['sn'].isalnum():
+                                sn = body['sn']
+                            else:
+                                iscustom = 'false'
+                        
+                        if 'mac' in body:
+                            macs = [x.strip() for x in re.split(',| |\|',body['mac']) if x.strip()!='']
+                            if len(macs) <= 0 or len(macs) > 8:
+                                iscustom = 'false'
+                            else:
+                                mac = ','.join(macs)
+                        
+                        if 'pid' in body:
+                            if len(body['pid']) == 6 and body['pid'].lower().startswith('0x') and all(c in string.hexdigits for c in body['pid'][2:]):
+                                pid = body['pid'].lower()
+                            else:
+                                iscustom = 'false'
+
+                        if 'vid' in body:
+                            if len(body['vid']) == 6 and body['vid'].lower().startswith('0x') and all(c in string.hexdigits for c in body['vid'][2:]):
+                                vid = body['vid'].lower()
+                            else:
+                                iscustom = 'false'
+
+                        if 'ext' in body:
+                            try:
+                                import wget
+                            except ModuleNotFoundError:
+                                os.system('pip3 install wget')
+                                import wget
+                            if os.path.exists('rpExtsFile'):
+                                os.remove('rpExtsFile')
+                            res = wget.download('https://raw.githubusercontent.com/pocopico/rp-ext/main/exts', out='rpExtsFile')
+                            with open('rpExtsFile', mode="rb") as f:
+                                rpExts = f.readlines()
+                            rpExts = [x.strip() for x in rpExts]
+                            exts = [x.strip() for x in re.split(',| |\|',body['ext']) if x.strip()!='']
+                            if len(exts) > 0 and not set(exts) <= set(rpExts):
+                                ext = ','.join(exts)
+                            else:
+                                iscustom = 'false'
+
+                        if 'jun' in body:
+                            if body['jun'] in ['0', '1']:
+                                jun = body['jun']
+                            else:
+                                iscustom = 'false'
+
+                else:
+                    platform = '${{ inputs.platform }}'
+                    version = '${{ inputs.version }}'
+                    sataportmap = '${{ inputs.sataportmap }}'
+                    diskidxmap = '${{ inputs.diskidxmap }}'
+                    sn = '${{ inputs.sn }}'
+                    pid = '${{ inputs.pid }}'
+                    vid = '${{ inputs.vid }}'
+                    mac = '${{ inputs.mac }}'
+                    ext = '${{ inputs.ext }}'
+                    jun = '${{ inputs.jun }}'
+
+                set_output('issues', issues)
+                set_output('iscustom', iscustom)
+
+                set_output('platform', platform)
+                set_output('version', version)
+                set_output('sataportmap', sataportmap)
+                set_output('diskidxmap', diskidxmap)
+                set_output('sn', sn)
+                set_output('mac', mac)
+                set_output('pid', pid)
+                set_output('vid', vid)
+                set_output('ext', ext)
+                set_output('jun', jun)
+
+      - name: Add labels
+        if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true'
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'add-labels'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          labels: 'custom'
+
+      - name: Create comment
+        if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true'
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'create-comment'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            ${{ github.event.issue.user.login }} 您好.
+            您自定义的 Redpill 已开始构建。请前往下面的 URL 查看详细信息。
+            > ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            ----
+            Hello ${{ github.event.issue.user.login }}. 
+            Your customized Redpill has started building. Please click the URL below to view the details.
+            > ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          emoji: heart
+
+      - name: Create comment
+        if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'false'
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'create-comment'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            ${{ github.event.issue.user.login }} 您好.
+            您自定义 Redpill 所填写的信息无法解析, 请参考模板并请重新发起定制。  
+            > 
+            ----
+            Hello ${{ github.event.issue.user.login }}. 
+            The information filled in by your customized Redpill cannot be parsed. Please refer to the template and restart customization.
+            > 
+          emoji: confused
+
+      - name: config
+        uses: jannekem/run-python-script-action@v1.2
+        with:
+          script: |
+            import os, json
+
+            if __name__ == '__main__':
+                config = {
+                    "extra_cmdline": {
+                        "pid": "0x0001",
+                        "vid": "0x46f4",
+                        "sn": "2150SQRW1ZAHH",
+                        "mac1": "001132FA6CD3",
+                        "mac2": "001132FA6CD4",
+                        "netif_num": 2
+                    },
+                    "synoinfo": {
+                        "internalportcfg": "0xffff",
+                        "maxlanport": "7",
+                        "maxdisks": "16",
+                        "support_bde_internal_10g": "no",
+                        "support_disk_compatibility": "no",
+                        "support_memory_compatibility": "no"
+                    },
+                    "ramdisk_copy": {},
+                    "extensions": []
+                }
+
+                if '${{ steps.info.outputs.sataportmap }}' != '':
+                    config["extra_cmdline"]["SataPortMap"] = '${{ steps.info.outputs.sataportmap }}'
+                if '${{ steps.info.outputs.diskidxmap }}' != '':
+                    config["extra_cmdline"]["DiskIdxMap"] = '${{ steps.info.outputs.diskidxmap }}'
+                  
+                if '${{ steps.info.outputs.pid }}' != '':
+                  config["extra_cmdline"]["pid"] = '${{ steps.info.outputs.pid }}'
+                if '${{ steps.info.outputs.vid }}' != '':
+                  config["extra_cmdline"]["vid"] = '${{ steps.info.outputs.vid }}'
+
+                dat = []
+                if '${{ steps.info.outputs.sn }}' == '' or '${{ steps.info.outputs.mac }}' == '':
+                    try:
+                        import wget
+                    except ModuleNotFoundError:
+                        os.system('pip3 install wget')
+                        import wget
+                    res = wget.download('https://raw.githubusercontent.com/pocopico/tinycore-redpill/main/serialnumbergen.sh', out='serialnumbergen.sh')
+                    os.popen('sed -i "s|DS3622xsp|DS3622xs+|g" serialnumbergen.sh')
+                    os.popen('sed -i "s|echo.*\$(generateMacAddress)|echo \$(generateMacAddress)|g" serialnumbergen.sh')
+                    os.popen('sed -i "s|echo.*\$(generateSerial \$1)|echo \$(generateSerial \$1)|g" serialnumbergen.sh')
+                    dat = os.popen('bash ./serialnumbergen.sh ${{ steps.info.outputs.platform }}').readlines()
+                
+                if '${{ steps.info.outputs.sn }}' != '':
+                    config["extra_cmdline"]["sn"] = '${{ steps.info.outputs.pid }}'
+                elif len(dat) == 2:
+                    config["extra_cmdline"]["sn"] = dat[1].strip()
+
+                if '${{ steps.info.outputs.mac }}' != '':
+                    for index, item in enumerate('${{ steps.info.outputs.mac }}'.split(',')):
+                        config["extra_cmdline"]["mac{}".format(index+1)] = item
+                    config["extra_cmdline"]["netif_num"] = len('${{ steps.info.outputs.mac }}'.split(','))
+                elif len(dat) == 2:
+                    config["extra_cmdline"]["mac1"] = dat[0].strip().replace(':', '')
+                    config["extra_cmdline"]["mac2"] = hex(int(dat[0].strip().replace(':', ''), 16) + 1)[2:].rjust(12,'0').upper()
+                        
+                print(json.dumps(config, indent=4))
+
+                with open('user_config.json', 'w', encoding="utf-8") as f:
+                    f.write(json.dumps(config, indent=4))
+                  
+      - name: Run Build
+        if: steps.info.outputs.iscustom == 'true'
+        run: |
+          sudo apt update
+          sudo apt-get install curl bspatch jq git -y
+
+          git clone https://github.com/jumkey/redpill-load.git redpill-load
+          cp user_config.json redpill-load/user_config.json
+
+          cd redpill-load
+
+          # 添加扩展驱动
+          # ./ext-manager.sh add https://github.com/pocopico/redpill-load/blob/master/redpill-boot-wait/rpext-index.json
+          ./ext-manager.sh add https://github.com/pocopico/redpill-load/raw/master/redpill-acpid/rpext-index.json
+          ./ext-manager.sh add https://github.com/pocopico/redpill-load/raw/master/redpill-misc/rpext-index.json
+          ./ext-manager.sh add https://github.com/pocopico/redpill-load/raw/master/redpill-virtio/rpext-index.json
+
+          if [ ${{ steps.info.outputs.platform }} == 'DS3615xs' ]; then
+            wget https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill/releases/redpill-3.10.108.tgz
+            tar zxvf redpill-3.10.108.tgz -C ./ && mv ./redpill.ko ./ext/rp-lkm/redpill-linux-v3.10.108.ko
+          fi
+
+          if [ ${{ steps.info.outputs.platform }} == 'DS3617xs' ]; then
+            wget https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill/releases/redpill-4.4.180plus-broadwell.tgz
+            tar zxvf redpill-4.4.180plus-broadwell.tgz -C ./ && mv ./redpill.ko ./ext/rp-lkm/redpill-linux-v4.4.180+.ko
+          fi
+
+          if [ ${{ steps.info.outputs.platform }} == 'DS918+' ]; then
+            wget https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill/releases/redpill-4.4.180plus.tgz
+            tar zxvf redpill-4.4.180plus.tgz -C ./ && mv ./redpill.ko ./ext/rp-lkm/redpill-linux-v4.4.180+.ko
+          fi
+
+          if [ ${{ steps.info.outputs.platform }} == 'DS920+' ]; then
+            wget https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill/releases/redpill-4.4.180plus-geminilake.tgz
+            tar zxvf redpill-4.4.180plus-geminilake.tgz -C ./ && mv ./redpill.ko ./ext/rp-lkm/redpill-linux-v4.4.180+.ko
+            ./ext-manager.sh add https://raw.githubusercontent.com/pocopico/rp-ext/master/redpill-dtb-static/rpext-index.json
+          fi
+
+          if [ ${{ steps.info.outputs.platform }} == 'DS3622xs+' ]; then
+            wget https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill/releases/redpill-4.4.180plus-broadwellnk.tgz
+            tar zxvf redpill-4.4.180plus-broadwellnk.tgz -C ./ && mv ./redpill.ko ./ext/rp-lkm/redpill-linux-v4.4.180+.ko
+          fi
+
+          if [ -n ${{ steps.info.outputs.ext }} ]; then
+            ext=${{ steps.info.outputs.ext }}
+            exts=(${ext//,/ })
+            for item in ${exts[@]}
+            do
+              ./ext-manager.sh add "https://raw.githubusercontent.com/pocopico/rp-ext/master/${item}/rpext-index.json"
+            done
+          fi
+
+          sudo BRP_JUN_MOD=${{ steps.info.outputs.jun }} BRP_DEBUG=1 BRP_USER_CFG=user_config.json ./build-loader.sh '${{ steps.info.outputs.platform }}' '${{ steps.info.outputs.version }}'
+
+      - name: Generate release tag
+        if: steps.info.outputs.iscustom == 'true'
+        id: tag
+        run: |
+          echo "### Redpill Custom By ${{ github.event.issue.user.login }}" >> $GITHUB_STEP_SUMMARY
+          if [ ${{ steps.info.outputs.iscustom }} == 'true' ]; then
+            echo "👉 issues: [#${{ github.event.issue.number }}]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/issues/${{ github.event.issue.number }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "👉 "platform": "${{ steps.info.outputs.platform }}"  " >> $GITHUB_STEP_SUMMARY
+            echo "👉 "version": "${{ steps.info.outputs.version }}"  " >> $GITHUB_STEP_SUMMARY
+            echo "👉 "sataportmap": "${{ steps.info.outputs.sataportmap }}"  " >> $GITHUB_STEP_SUMMARY
+            echo "👉 "diskidxmap": "${{ steps.info.outputs.diskidxmap }}"  " >> $GITHUB_STEP_SUMMARY
+            echo "👉 "sn": "${{ steps.info.outputs.sn }}"  " >> $GITHUB_STEP_SUMMARY
+            echo "👉 "mac": "${{ steps.info.outputs.mac }}"  " >> $GITHUB_STEP_SUMMARY
+            echo "👉 "pid": "${{ steps.info.outputs.pid }}"  " >> $GITHUB_STEP_SUMMARY
+            echo "👉 "vid": "${{ steps.info.outputs.vid }}"  " >> $GITHUB_STEP_SUMMARY
+            echo "👉 "ext": "${{ steps.info.outputs.ext }}"  " >> $GITHUB_STEP_SUMMARY
+            echo "👉 "jun": "${{ steps.info.outputs.jun }}"  " >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
+          echo "::set-output name=repository_name::$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}')"
+
+      - name: Upload to Artifacts
+        if: steps.info.outputs.iscustom == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.tag.outputs.repository_name }}-Custom-${{ steps.tag.outputs.release_tag }}
+          path: |
+            redpill-load/user_config.json
+            redpill-load/images/*.img
+
+      - name: Create comment
+        if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true'
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'create-comment'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            ${{ github.event.issue.user.login }} 您好.
+            您自定义的 Redpill 已构建完成。请前往下面的 URL 下载。
+            > ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}  
+            ----
+            Hello ${{ github.event.issue.user.login }}. 
+            Your customized Redpill has been builded. Please click the URL below to download it.
+            > ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          emoji: hooray
+
+      - name: Close issue
+        if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true'
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'close-issue'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
