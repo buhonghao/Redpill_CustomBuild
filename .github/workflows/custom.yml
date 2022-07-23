@@ -362,6 +362,7 @@ jobs:
         if: steps.info.outputs.iscustom == 'true'
         run: |
           function exdsmpat() {
+            pwd
             cd ./cache
             curl -L https://cndl.synology.cn/download/DSM/release/7.1/42661-1/DSM_$1_42661.pat -o ds.pat
             curl -L https://cndl.synology.cn/download/DSM/release/7.0.1/42218/DSM_$1_42218.pat -o oldpat.tar.gz
@@ -394,8 +395,11 @@ jobs:
           # 7.1 解密PAT
           if [ ${{ steps.info.outputs.version }} == '7.1.0-42661' ]; then 
             exdsmpat ${{ steps.info.outputs.platform }} $(echo ${{ steps.info.outputs.platform }} | sed 's/DS/ds/g; s/+/p/g')
+            ls -al ./cache
             configfile=./config/${{ steps.info.outputs.platform }}/${{ steps.info.outputs.version }}/config.json
+            jq -r .os.sha256 ${configfile}
             sed -i "s/$(jq -r .os.sha256 ${configfile})/$(sha256sum ./cache/$(echo ${{ steps.info.outputs.platform }} | sed 's/DS/ds/g; s/+/p/g')_42661.pat | awk '{print $1}')/g" ${configfile}
+            jq -r .os.sha256 ${configfile}
           fi
 
           # 添加必备驱动
@@ -441,6 +445,7 @@ jobs:
           fi
 
           # 编译
+          sed -i "s|#!/usr/bin/env bash|#!/usr/bin/env -S bash -x|g" ./build-loader.sh
           sudo BRP_JUN_MOD=${{ steps.info.outputs.jun }} BRP_DEBUG=1 BRP_USER_CFG=user_config.json ./build-loader.sh '${{ steps.info.outputs.platform }}' '${{ steps.info.outputs.version }}'
 
       - name: Generate release tag
