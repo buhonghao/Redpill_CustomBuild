@@ -388,7 +388,11 @@ jobs:
           sudo apt update
           sudo apt-get install curl bspatch jq git -y
 
-          git clone https://github.com/pocopico/redpill-load.git redpill-load
+          if [ ${{ steps.info.outputs.version }} == '7.1.0-42661' ]; then 
+            git clone https://github.com/pocopico/redpill-load.git redpill-load
+          else
+            git clone https://github.com/jumkey/redpill-load.git redpill-load
+          fi 
           
           cp user_config.json redpill-load/user_config.json
 
