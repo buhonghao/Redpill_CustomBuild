@@ -329,9 +329,9 @@ jobs:
                         os.system('pip3 install wget')
                         import wget
                     res = wget.download('https://raw.githubusercontent.com/pocopico/tinycore-redpill/main/serialnumbergen.sh', out='serialnumbergen.sh')
-                    os.popen('sed -i "s|DS3622xsp|DS3622xs+|g" serialnumbergen.sh')
-                    os.popen('sed -i "s|echo.*\$(generateMacAddress)|echo \$(generateMacAddress)|g" serialnumbergen.sh')
-                    os.popen('sed -i "s|echo.*\$(generateSerial \$1)|echo \$(generateSerial \$1)|g" serialnumbergen.sh')
+                    os.system('sed -i "s|DS3622xsp|DS3622xs+|g" serialnumbergen.sh')
+                    os.system('sed -i "s|echo.*\$(generateMacAddress)|echo \$(generateMacAddress)|g" serialnumbergen.sh')
+                    os.system('sed -i "s|echo.*\$(generateSerial \$1)|echo \$(generateSerial \$1)|g" serialnumbergen.sh')
                     dat = os.popen('bash ./serialnumbergen.sh ${{ steps.info.outputs.platform }}').readlines()
                 
                 if '${{ steps.info.outputs.sn }}' != '':
