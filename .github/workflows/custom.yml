@@ -301,12 +301,14 @@ jobs:
                     },
                     "synoinfo": {
                         "internalportcfg": "0xffff",
+                        "maxlanport": "7",
                         "maxdisks": "9",
                         "support_bde_internal_10g": "no",
                         "support_disk_compatibility": "no",
                         "support_memory_compatibility": "no"
                     },
-                    "ramdisk_copy": {}
+                    "ramdisk_copy": {},
+                    "extensions": []
                 }
 
                 if '${{ steps.info.outputs.sataportmap }}' != '':
@@ -359,15 +361,44 @@ jobs:
       - name: Run Build
         if: steps.info.outputs.iscustom == 'true'
         run: |
+          function exdsmpat() {
+            cd ./cache
+            curl -L https://cndl.synology.cn/download/DSM/release/7.1/42661-1/DSM_$1_42661.pat -o ds.pat
+            curl -L https://cndl.synology.cn/download/DSM/release/7.0.1/42218/DSM_$1_42218.pat -o oldpat.tar.gz
+            mkdir synoesp && tar -C./synoesp/ -xf oldpat.tar.gz rd.gz
+            cd synoesp
+            xz -dc < rd.gz >rd 2>/dev/null || echo "extract rd.gz"
+            cpio -idm <rd 2>&1 || echo "extract rd"
+            mkdir extract
+            cp ./usr/lib/libcurl.so.4 ./usr/lib/libmbedcrypto.so.5 ./usr/lib/libmbedtls.so.13 ./usr/lib/libmbedx509.so.1 ./usr/lib/libmsgpackc.so.2 ./usr/lib/libsodium.so ./usr/lib/libsynocodesign-ng-virtual-junior-wins.so.7 ./usr/syno/bin/scemd ./extract/
+            ln -s ./extract/scemd ./extract/syno_extract_system_patch
+            cd ..
+            sudo LD_LIBRARY_PATH=synoesp/extract synoesp/extract/syno_extract_system_patch ds.pat pat || echo "extract latest pat"
+            mkdir pat && cd pat && tar -czvf archive.tar.gz ./ --warning=no-file-changed && cd ..
+            mv ./pat/archive.tar.gz ./$1_42661.pat
+            sudo rm -rf ds.pat oldpat.tar.gz synoesp pat
+
+            oldsha256=$()
+            sha256sum $1_42661.pat
+          }
+
           sudo apt update
           sudo apt-get install curl bspatch jq git -y
 
           git clone https://github.com/jumkey/redpill-load.git redpill-load
+          
           cp user_config.json redpill-load/user_config.json
 
           cd redpill-load
 
-          # 添加扩展驱动
+          # 7.1 解密PAT
+          if [ ${{ steps.info.outputs.version }} == '7.1.0-42661' ]; then 
+            exdsmpat ${{ steps.info.outputs.platform }}
+            configfile=./config/${{ steps.info.outputs.platform }}/${{ steps.info.outputs.platform }}/config.json
+            sed -i "s/$(jq -r .os.sha256 ${configfile})/$(sha256sum ./cache/${{ steps.info.outputs.platform }}_42661.pat | awk '{print $1}')/g" ${configfile}
+          fi
+
+          # 添加必备驱动
           # ./ext-manager.sh add https://github.com/pocopico/redpill-load/blob/master/redpill-boot-wait/rpext-index.json
           ./ext-manager.sh add https://github.com/pocopico/redpill-load/raw/master/redpill-acpid/rpext-index.json
           ./ext-manager.sh add https://github.com/pocopico/redpill-load/raw/master/redpill-misc/rpext-index.json
@@ -399,6 +430,7 @@ jobs:
             tar zxvf redpill-4.4.180plus-broadwellnk.tgz -C ./ && mv ./redpill.ko ./ext/rp-lkm/redpill-linux-v4.4.180+.ko
           fi
 
+          # 添加扩展驱动
           if [ -n ${{ steps.info.outputs.ext }} ]; then
             ext=${{ steps.info.outputs.ext }}
             exts=(${ext//,/ })
@@ -408,6 +440,7 @@ jobs:
             done
           fi
 
+          # 编译
           sudo BRP_JUN_MOD=${{ steps.info.outputs.jun }} BRP_DEBUG=1 BRP_USER_CFG=user_config.json ./build-loader.sh '${{ steps.info.outputs.platform }}' '${{ steps.info.outputs.version }}'
 
       - name: Generate release tag
