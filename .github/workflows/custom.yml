@@ -375,9 +375,9 @@ jobs:
             cd ..
             sudo LD_LIBRARY_PATH=synoesp/extract synoesp/extract/syno_extract_system_patch ds.pat pat || echo "extract latest pat"
             mkdir pat && cd pat && tar -czvf archive.tar.gz ./ --warning=no-file-changed && cd ..
-            mv ./pat/archive.tar.gz ./$1_42661.pat
+            mv ./pat/archive.tar.gz ./$2_42661.pat
             sudo rm -rf ds.pat oldpat.tar.gz synoesp pat
-            sha256sum $1_42661.pat
+            sha256sum $2_42661.pat
             cd ..
             pwd
           }
@@ -393,9 +393,9 @@ jobs:
 
           # 7.1 解密PAT
           if [ ${{ steps.info.outputs.version }} == '7.1.0-42661' ]; then 
-            exdsmpat ${{ steps.info.outputs.platform }}
+            exdsmpat ${{ steps.info.outputs.platform }} $(echo ${{ steps.info.outputs.platform }} | sed 's/DS/ds/g; s/+/p/g')
             configfile=./config/${{ steps.info.outputs.platform }}/${{ steps.info.outputs.version }}/config.json
-            sed -i "s/$(jq -r .os.sha256 ${configfile})/$(sha256sum ./cache/${{ steps.info.outputs.platform }}_42661.pat | awk '{print $1}')/g" ${configfile}
+            sed -i "s/$(jq -r .os.sha256 ${configfile})/$(sha256sum ./cache/$(echo ${{ steps.info.outputs.platform }} | sed 's/DS/ds/g; s/+/p/g')_42661.pat | awk '{print $1}')/g" ${configfile}
           fi
 
           # 添加必备驱动
