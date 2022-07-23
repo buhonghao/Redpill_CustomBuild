@@ -378,6 +378,7 @@ jobs:
             mv ./pat/archive.tar.gz ./$1_42661.pat
             sudo rm -rf ds.pat oldpat.tar.gz synoesp pat
             sha256sum $1_42661.pat
+            cd ..
           }
 
           sudo apt update
