@@ -4,6 +4,11 @@
 [Redpill_CustomBuild](https://github.com/wjz304/Redpill_CustomBuild)
 
 ## 说明  
+在 Issues 创建问题，按需填写即可 参考示例[issues#1](https://github.com/wjz304/Redpill_CustomBuild/issues/1)  
+构建成功 会自动 closed  
+构建失败 目前不会有通知  
+ext 存在兼容性问题, 添加是请与型号和版本对应, (比如r8125 不支持 DS920+ 的 7.0.1-42218 版本, 添加会编译失败)
+
 
 #### title:
   - 标题请以 custom 开头（不区分大小写），且不要包含'(单引号),"(双引号) 等转义字符。
