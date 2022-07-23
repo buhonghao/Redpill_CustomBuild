@@ -211,7 +211,8 @@ jobs:
                                 jun = body['jun']
                             else:
                                 iscustom = 'false'
-
+                    else:
+                        iscustom = 'false'
                 else:
                     platform = '${{ inputs.platform }}'
                     version = '${{ inputs.version }}'
@@ -282,6 +283,7 @@ jobs:
           emoji: confused
 
       - name: config
+        if: steps.info.outputs.iscustom == 'true'
         uses: jannekem/run-python-script-action@v1.2
         with:
           script: |

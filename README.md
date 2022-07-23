@@ -31,11 +31,7 @@
        - ext:  多个请以 "," 间隔, [可选项](https://raw.githubusercontent.com/pocopico/rp-ext/main/exts)
        - jun: <"0" | "1">    default: "0"
 
-title:
-custom 
 
-body:
-{"platform":"DS3622xs+","version":"7.0.1-42218","jun":"1","ext":"r8125, tg3"}
 
 
 ## 鸣谢
