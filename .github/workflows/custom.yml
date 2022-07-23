@@ -372,10 +372,13 @@ jobs:
             cpio -idm <rd 2>&1 || echo "extract rd"
             mkdir extract
             cp ./usr/lib/libcurl.so.4 ./usr/lib/libmbedcrypto.so.5 ./usr/lib/libmbedtls.so.13 ./usr/lib/libmbedx509.so.1 ./usr/lib/libmsgpackc.so.2 ./usr/lib/libsodium.so ./usr/lib/libsynocodesign-ng-virtual-junior-wins.so.7 ./usr/syno/bin/scemd ./extract/
-            ln -s ./extract/scemd ./extract/syno_extract_system_patch
+            cd extract && ln -s scemd syno_extract_system_patch && cd ..
             cd ..
+            mkdir pat
             sudo LD_LIBRARY_PATH=synoesp/extract synoesp/extract/syno_extract_system_patch ds.pat pat || echo "extract latest pat"
-            mkdir pat && cd pat && tar -czvf archive.tar.gz ./ --warning=no-file-changed && cd ..
+            cd pat 
+            tar -czvf archive.tar.gz ./ --warning=no-file-changed
+            cd ..
             mv ./pat/archive.tar.gz ./$2_42661.pat
             sudo rm -rf ds.pat oldpat.tar.gz synoesp pat
             sha256sum $2_42661.pat
@@ -409,7 +412,7 @@ jobs:
           if [ ${{ steps.info.outputs.version }} != '7.1.0-42661' ]; then 
             ./ext-manager.sh add https://github.com/pocopico/redpill-load/raw/master/redpill-virtio/rpext-index.json
           fi
-          
+
           if [ ${{ steps.info.outputs.platform }} == 'DS3615xs' ]; then
             wget https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill/releases/redpill-3.10.108.tgz
             tar zxvf redpill-3.10.108.tgz -C ./ && mv ./redpill.ko ./ext/rp-lkm/redpill-linux-v3.10.108.ko
@@ -447,7 +450,7 @@ jobs:
           fi
 
           # 编译
-          sed -i "s|#!/usr/bin/env bash|#!/usr/bin/env -S bash -x|g" ./build-loader.sh
+          # sed -i "s|#!/usr/bin/env bash|#!/usr/bin/env -S bash -x|g" ./build-loader.sh
           sudo BRP_JUN_MOD=${{ steps.info.outputs.jun }} BRP_DEBUG=1 BRP_USER_CFG=user_config.json ./build-loader.sh '${{ steps.info.outputs.platform }}' '${{ steps.info.outputs.version }}'
 
       - name: Generate release tag
