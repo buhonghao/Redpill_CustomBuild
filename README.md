@@ -40,5 +40,7 @@ ext 存在兼容性问题, 添加是请与型号和版本对应, (比如r8125 �
 
 
 ## 鸣谢
+https://github.com/jumkey/redpill-load  
 https://github.com/pocopico/redpill-load  
+https://github.com/Online24Hours/Redpill_Build  
 
