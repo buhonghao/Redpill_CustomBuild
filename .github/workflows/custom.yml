@@ -301,14 +301,12 @@ jobs:
                     },
                     "synoinfo": {
                         "internalportcfg": "0xffff",
-                        "maxlanport": "7",
                         "maxdisks": "9",
                         "support_bde_internal_10g": "no",
                         "support_disk_compatibility": "no",
                         "support_memory_compatibility": "no"
                     },
-                    "ramdisk_copy": {},
-                    "extensions": []
+                    "ramdisk_copy": {}
                 }
 
                 if '${{ steps.info.outputs.sataportmap }}' != '':
