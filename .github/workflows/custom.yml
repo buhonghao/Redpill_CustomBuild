@@ -376,11 +376,10 @@ jobs:
             cd ..
             mkdir pat
             sudo LD_LIBRARY_PATH=synoesp/extract synoesp/extract/syno_extract_system_patch ds.pat pat || echo "extract latest pat"
-            cd pat 
-            tar -czvf archive.tar.gz ./ --warning=no-file-changed
-            cd ..
-            mv ./pat/archive.tar.gz ./$2_42661.pat
+            tar -czvf $2_42661.pat -C ./pat/ . --warning=no-file-changed
+            ls -al
             sudo rm -rf ds.pat oldpat.tar.gz synoesp pat
+            ls -al
             sha256sum $2_42661.pat
             cd ..
             pwd
