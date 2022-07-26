@@ -459,7 +459,7 @@ jobs:
         id: tag
         run: |
           echo "### Redpill Custom By ${{ github.event.issue.user.login }}" >> $GITHUB_STEP_SUMMARY
-          if [ ${{ steps.info.outputs.iscustom }} == 'true' ]; then
+          if [ ${{ steps.info.outputs.issues }} == 'true' ]; then
             echo "👉 issues: [#${{ github.event.issue.number }}]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/issues/${{ github.event.issue.number }})" >> $GITHUB_STEP_SUMMARY
           else
             echo "👉 "platform": "${{ steps.info.outputs.platform }}"  " >> $GITHUB_STEP_SUMMARY
