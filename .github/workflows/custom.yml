@@ -308,8 +308,7 @@ jobs:
                         "vid": "0x46f4",
                         "sn": "2150SQRW1ZAHH",
                         "mac1": "001132FA6CD3",
-                        "mac2": "001132FA6CD4",
-                        "netif_num": 2
+                        "netif_num": 1
                     },
                     "synoinfo": {
                         "internalportcfg": "0xffff",
@@ -353,12 +352,13 @@ jobs:
 
                 if '${{ steps.info.outputs.mac }}' != '':
                     for index, item in enumerate('${{ steps.info.outputs.mac }}'.split(',')):
-                        config["extra_cmdline"]["mac{}".format(index+1)] = item
+                        config["extra_cmdline"]["mac{}".format(index+1)] = item.replace(':', '').upper()
                     config["extra_cmdline"]["netif_num"] = len('${{ steps.info.outputs.mac }}'.split(','))
                 elif len(dat) == 2:
                     config["extra_cmdline"]["mac1"] = dat[0].strip().replace(':', '')
                     config["extra_cmdline"]["mac2"] = hex(int(dat[0].strip().replace(':', ''), 16) + 1)[2:].rjust(12,'0').upper()
-
+                    config["extra_cmdline"]["netif_num"] = 2
+                
                 if '${{ steps.info.outputs.platform }}' in ['DS918+', 'DS920+']:
                     config["synoinfo"]["maxdisks"] = "9"
 
