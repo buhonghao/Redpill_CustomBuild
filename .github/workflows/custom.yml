@@ -106,6 +106,18 @@ jobs:
           git config --global user.name "github-actions[bot]"
           sudo timedatectl set-timezone "Asia/Shanghai"
 
+      - name: Get Issues
+        if: github.event_name == 'issues'
+        run: |
+          issuetitle=$(sed -E 's/[[:space:]|[:punct:]]/_/g' <<<'${{ github.event.issue.title }}')
+          issuebodys=$(echo '${{ github.event.issue.body }}' | tr '\r' ' ' | tr '\n' ' ')
+
+          echo ${issuetitle}
+          echo ${issuebodys}
+
+          echo "issuetitle=${issuetitle}" >> $GITHUB_ENV
+          echo "issuebodys=${issuebodys}" >> $GITHUB_ENV
+
       - name: Get Info
         uses: jannekem/run-python-script-action@v1.2
         id: info
@@ -130,11 +142,11 @@ jobs:
                 jun = '0'
 
                 if '${{ github.event_name }}' == 'issues':
-                    if '${{ github.event.issue.title }}'.lower().startswith('custom'):
+                    if '${{ env.issuetitle }}'.lower().startswith('custom'):
                         issues = 'true'
 
                         body = {}
-                        body = json.loads('${{ github.event.issue.body }}')
+                        body = json.loads('${{ env.issuebodys }}')
                         
                         if len(body) == 0:
                             iscustom = 'false'
