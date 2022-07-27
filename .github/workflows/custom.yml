@@ -272,7 +272,7 @@ jobs:
             您自定义的 Redpill 已开始构建。请前往下面的 URL 查看详细信息。
             > ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
             ----
-            Hello ${{ github.event.issue.user.login }}. 
+            Hi ${{ github.event.issue.user.login }}. 
             Your customized Redpill has started building. Please click the URL below to view the details.
             > ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           emoji: heart
@@ -289,7 +289,7 @@ jobs:
             您自定义 Redpill 所填写的信息无法解析, 请参考模板并请重新发起定制。  
             > 
             ----
-            Hello ${{ github.event.issue.user.login }}. 
+            Hi ${{ github.event.issue.user.login }}. 
             The information filled in by your customized Redpill cannot be parsed. Please refer to the template and restart customization.
             > 
           emoji: confused
@@ -307,8 +307,7 @@ jobs:
                         "pid": "0x0001",
                         "vid": "0x46f4",
                         "sn": "2150SQRW1ZAHH",
-                        "mac1": "001132FA6CD3",
-                        "netif_num": 1
+                        "mac1": "001132FA6CD3"
                     },
                     "synoinfo": {
                         "internalportcfg": "0xffff",
@@ -509,7 +508,7 @@ jobs:
             您自定义的 Redpill 已构建完成。请前往下面的 URL 下载。
             > ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}  
             ----
-            Hello ${{ github.event.issue.user.login }}. 
+            Hi ${{ github.event.issue.user.login }}. 
             Your customized Redpill has been builded. Please click the URL below to download it.
             > ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           emoji: hooray
