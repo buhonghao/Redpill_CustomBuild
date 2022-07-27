@@ -412,10 +412,7 @@ jobs:
           # ./ext-manager.sh add https://github.com/pocopico/redpill-load/blob/master/redpill-boot-wait/rpext-index.json
           ./ext-manager.sh add https://github.com/pocopico/redpill-load/raw/master/redpill-acpid/rpext-index.json
           ./ext-manager.sh add https://github.com/pocopico/redpill-load/raw/master/redpill-misc/rpext-index.json
-          
-          if [ ${{ steps.info.outputs.version }} == '7.1.0-42661' ]; then 
-            ./ext-manager.sh add https://github.com/pocopico/redpill-load/raw/master/redpill-virtio/rpext-index.json
-          fi
+          ./ext-manager.sh add https://github.com/pocopico/redpill-load/raw/master/redpill-virtio/rpext-index.json
 
           if [ ${{ steps.info.outputs.platform }} == 'DS3615xs' ]; then
             wget https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill/releases/redpill-3.10.108.tgz
