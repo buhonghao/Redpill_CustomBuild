@@ -370,7 +370,7 @@ jobs:
                     f.write(json.dumps(config, indent=4))
                   
       - name: Run Build
-        if: steps.info.outputs.iscustom == 'true'
+        if: steps.info.outputs.iscustom == 'true' && success()
         run: |
           function exdsmpat() {
             pwd
@@ -466,7 +466,7 @@ jobs:
           sudo BRP_JUN_MOD=${{ steps.info.outputs.jun }} BRP_DEBUG=1 BRP_USER_CFG=user_config.json ./build-loader.sh '${{ steps.info.outputs.platform }}' '${{ steps.info.outputs.version }}'
 
       - name: Generate release tag
-        if: steps.info.outputs.iscustom == 'true'
+        if: steps.info.outputs.iscustom == 'true' && success()
         id: tag
         run: |
           echo "### Redpill Custom By ${{ github.event.issue.user.login }}" >> $GITHUB_STEP_SUMMARY
@@ -488,7 +488,7 @@ jobs:
           echo "::set-output name=repository_name::$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}')"
 
       - name: Upload to Artifacts
-        if: steps.info.outputs.iscustom == 'true'
+        if: steps.info.outputs.iscustom == 'true' && success()
         uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.tag.outputs.repository_name }}-Custom-${{ steps.tag.outputs.release_tag }}
@@ -497,7 +497,7 @@ jobs:
             redpill-load/images/*.img
 
       - name: Create comment
-        if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true'
+        if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true' && success()
         uses: actions-cool/issues-helper@v3
         with:
           actions: 'create-comment'
@@ -514,9 +514,26 @@ jobs:
           emoji: hooray
 
       - name: Close issue
-        if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true'
+        if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true' && success()
         uses: actions-cool/issues-helper@v3
         with:
           actions: 'close-issue'
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.issue.number }}
+
+      - name: Create comment
+        if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true' && failure()
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'create-comment'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            ${{ github.event.issue.user.login }} 您好.
+            您自定义的 Redpill 构建失败。请前往下面的 URL 查看详细信息。请自行关闭本 Issues 并在进行调整后重新创建一个 Issues 来发起重新构建。
+            > ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}  
+            ----
+            Hi ${{ github.event.issue.user.login }}. 
+            Your customized Redpill build failed. Please click the URL below to view the details. Please close this issue by yourself and re create an issue after adjustment to initiate the rebuild.
+            > ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          emoji: hooray

@@ -4,11 +4,16 @@
 [Redpill_CustomBuild](https://github.com/wjz304/Redpill_CustomBuild)
 
 ## 说明  
-在 Issues 创建问题，按需填写即可 参考示例[issues#1](https://github.com/wjz304/Redpill_CustomBuild/issues/1)  
-构建成功 会自动 closed  
-构建失败 目前不会有通知  
-ext 存在兼容性问题, 添加是请与型号和版本对应, (比如r8125 不支持 DS920+ 的 7.0.1-42218 版本, 添加会编译失败)
+方式一：
+在本项目 Issues 中创建问题，按需填写即可发起定制构建，参考示例[issues#1](https://github.com/wjz304/Redpill_CustomBuild/issues/1)  
 
+构建成功 Issues 会自动 closed。
+构建失败 后请调整参数重新创建 Issues发起重新构建（每个 Issues 只会触发一次编译）。
+ext 存在兼容性问题, 添加是请与型号和版本对应, 并酌情添加 (不恰当的例子：r8125 不支持 DS920+ 的 7.0.1-42218 版本, 添加会编译失败)
+
+
+方式二： 
+fork 本项目 通过 Actions 填写相关参数进行构建。
 
 #### title:
 标题请以 custom 开头（不区分大小写），且不要包含'(单引号),"(双引号) 等转义字符。
@@ -18,7 +23,7 @@ ext 存在兼容性问题, 添加是请与型号和版本对应, (比如r8125 �
   - CUSTOM Ing 定制
   
 #### body:
-内容 以json格式编写
+内容 以json格式编写 ( 切记符号为英文符号，尤其是'[,]()'和 '["]()')
 
 参数        | 必选  |    默认值   | 说明  
 ------------|------|-------------|---------
@@ -38,6 +43,21 @@ jun         | ×    |"0"          | 7.0.1-42218 版本的jun模式 支持 7.01~7
   - {"platform":"DS3622xs+", "sataportmap":"1", "diskidxmap":"10", "pid":"0xa4a5", "vid":"0x0525"}
   - {"platform":"DS3622xs+", "version":"7.1.0-42661", "sn":"1980PDN002189", "mac":"001132888A95", "ext":"r8125"}
   - {"platform":"DS3622xs+", "version":"7.0.1-42218", "jun":"1", "mac":"001132888A95, 001132888A96", "ext":"r8125, tg3"}
+  - {  
+      "platform":"DS920+",  
+      "version":"7.1.0-42661",  
+      "mac":"001132888A95, 001132888A96, 001132888A97",  
+      "ext":"r8125, r8168, e1000e, igb, vmxnet3, ixgbe"  
+    }  
+
+## 写在这里
+1. 当前 7.0.1-42218 使用 jumkey库 的构建。7.1.0-42661 使用 pocopico库 构建。
+2. ext 当前使用 pocopico 库。
+3. 驱动默认集成 acpid, misc, virtio, dtb-static(only DS920+)。
+4. SN&MAC算号使用 pocopico 的脚本。
+
+
+
 
 ## 鸣谢
 https://github.com/RedPill-TTG/redpill-load  
