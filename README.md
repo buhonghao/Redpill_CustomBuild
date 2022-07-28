@@ -4,7 +4,7 @@
 [Redpill_CustomBuild](https://github.com/wjz304/Redpill_CustomBuild)
 
 ## 说明  
-方式一：
+方式一：  
 在本项目 Issues 中创建问题，按需填写即可发起定制构建，参考示例[issues#1](https://github.com/wjz304/Redpill_CustomBuild/issues/1)  
 
 构建成功 Issues 会自动 closed。
@@ -12,7 +12,7 @@
 ext 存在兼容性问题, 添加是请与型号和版本对应, 并酌情添加 (不恰当的例子：r8125 不支持 DS920+ 的 7.0.1-42218 版本, 添加会编译失败)
 
 
-方式二： 
+方式二：   
 fork 本项目 通过 Actions 填写相关参数进行构建。
 
 #### title:
