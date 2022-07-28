@@ -3,6 +3,9 @@
 ## 介绍  
 [Redpill_CustomBuild](https://github.com/wjz304/Redpill_CustomBuild)
 
+[![](https://img.shields.io/github/issues-closed-raw/wjz304/Redpill_CustomBuild/custom?label=定制成功)](https://github.com/wjz304/Redpill_CustomBuild/issues?q=is%3Aissue+is%3Aclosed+label%3Acustom)
+[![](https://img.shields.io/github/issues-raw/wjz304/Redpill_CustomBuild/custom?label=定制失败)](https://github.com/wjz304/Redpill_CustomBuild/issues?q=is%3Aopen+is%3Aissue+label%3Acustom)
+
 ## 说明  
 方式一：  
 在本项目 Issues 中创建问题，按需填写即可发起定制构建，参考示例[issues#1](https://github.com/wjz304/Redpill_CustomBuild/issues/1)  
