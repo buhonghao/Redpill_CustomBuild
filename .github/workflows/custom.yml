@@ -345,7 +345,7 @@ jobs:
                     dat = os.popen('bash ./serialnumbergen.sh ${{ steps.info.outputs.platform }}').readlines()
                 
                 if '${{ steps.info.outputs.sn }}' != '':
-                    config["extra_cmdline"]["sn"] = '${{ steps.info.outputs.pid }}'
+                    config["extra_cmdline"]["sn"] = '${{ steps.info.outputs.sn }}'
                 elif len(dat) == 2:
                     config["extra_cmdline"]["sn"] = dat[1].strip()
 
