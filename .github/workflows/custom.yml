@@ -235,13 +235,13 @@ jobs:
                             if os.path.exists('rpExtsFile'):
                                 os.remove('rpExtsFile')
                             res = wget.download('https://raw.githubusercontent.com/pocopico/rp-ext/main/exts', out='rpExtsFile')
-                            with open('rpExtsFile', mode="rb") as f:
+                            with open('rpExtsFile', mode="r") as f:
                                 rpExts = f.readlines()
                             rpExts = [x.strip() for x in rpExts]
                             exts = [x.strip() for x in re.split(',| |\|',body['ext']) if x.strip()!='']
                             print(rpExts)
                             print(exts)
-                            if len(exts) > 0 and len(rpExts) > 0 and set(exts) <= set(rpExts):
+                            if len(exts) > 0 and set(exts) <= set(rpExts):
                                 ext = ','.join(exts)
                             else:
                                 iscustom = 'false'
