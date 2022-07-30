@@ -42,15 +42,15 @@ exp       | ×    |"pocopico"      | "pocopico", "jumkey" (大佬的抉择，7.1
 jun       | ×    |"0"             | 7.0.1-42218 版本的jun模式 支持 7.01~7.1u3 的 DSM。
 
 - eg:
-  - {"platform":"DS3622xs+", "version":"7.0.1-42218", "jun":"1", "ext":"r8125, tg3"}
-  - {"platform":"DS3622xs+", "map":"1, 10", "usb":"0xa4a5, 0x0525"}
-  - {"platform":"DS3622xs+", "version":"7.1.0-42661", "sn":"1980PDN002189", "mac":"001132888A95", "ext":"r8125"}
-  - {"platform":"DS3622xs+", "version":"7.0.1-42218", "jun":"1", "mac":"001132888A95, 001132888A96", "ext":"r8125, tg3"}
+  - {"platform":"DS3622xs+", "version":"7.0.1-42218", "jun":"1", "ext":"r8125, tg3"}  
+  - {"platform":"DS3622xs+", "map":"1, 10", "usb":"0xa4a5, 0x0525"}  
+  - {"platform":"DS3622xs+", "version":"7.1.0-42661", "sn":"1980PDN002189", "mac":"001132888A95", "ext":"r8125"}  
+  - {"platform":"DS3622xs+", "version":"7.0.1-42218", "jun":"1", "mac":"001132888A95, 001132888A96", "ext":"r8125, tg3"}  
   - {  
       "platform":"DS3622xs+",  
       "version":"7.0.1-42218",  
-      "jun":"1",
-      "exp": "jumkey",
+      "jun":"1",  
+      "exp": "jumkey",  
       "mac":"001132888A95, 001132888A96, 001132888A97",  
       "ext":"r8125, r8168, e1000e, igb, vmxnet3, ixgbe"  
     }  
