@@ -249,7 +249,7 @@ jobs:
                                 errinfo = 'ext parameter error'
 
                         if 'exp' in body:
-                            if body['exp'] in ['jumkey', 'pocopico']:
+                            if body['exp'] in ['pocopico', 'jumkey']:
                                 exp = body['exp']
                             else:
                                 iscustom = 'false'
@@ -480,30 +480,55 @@ jobs:
           ./ext-manager.sh add https://raw.githubusercontent.com/${repo}/redpill-load/${branch}/redpill-misc/rpext-index.json
           ./ext-manager.sh add https://raw.githubusercontent.com/${repo}/redpill-load/${branch}/redpill-virtio/rpext-index.json
 
-          if [ ${{ steps.info.outputs.platform }} == 'DS3615xs' ]; then
-            wget https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill/releases/redpill-3.10.108.tgz
-            tar zxvf redpill-3.10.108.tgz -C ./ && mv ./redpill.ko ./ext/rp-lkm/redpill-linux-v3.10.108.ko
-          fi
-
-          if [ ${{ steps.info.outputs.platform }} == 'DS3617xs' ]; then
-            wget https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill/releases/redpill-4.4.180plus-broadwell.tgz
-            tar zxvf redpill-4.4.180plus-broadwell.tgz -C ./ && mv ./redpill.ko ./ext/rp-lkm/redpill-linux-v4.4.180+.ko
-          fi
-
-          if [ ${{ steps.info.outputs.platform }} == 'DS918+' ]; then
-            wget https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill/releases/redpill-4.4.180plus.tgz
-            tar zxvf redpill-4.4.180plus.tgz -C ./ && mv ./redpill.ko ./ext/rp-lkm/redpill-linux-v4.4.180+.ko
-          fi
+          # redpill.ko
+          synomodel=$(echo ${{ steps.info.outputs.platform }} | sed 's/DS/ds/g; s/+/p/g')_$(echo ${{ steps.info.outputs.version }} | awk -F - '{print $2}')
+          extension=$(curl -s --location "https://raw.githubusercontent.com/pocopico/rp-ext/master/redpill/rpext-index.json")
+          redpilltgz=$(curl -s --location "$(echo ${extension} | jq -r .releases.$synomodel)" | jq -r '.files[] .url')
+          wget ${redpilltgz}
+          tar zxvf $(echo ${redpilltgz} | awk -F / '{print $NF}') -C ./ 
+          mv ./redpill.ko ./ext/rp-lkm/redpill-linux-v$(modinfo redpill.ko | grep vermagic | awk '{print $2}').ko
 
           if [ ${{ steps.info.outputs.platform }} == 'DS920+' ]; then
-            wget https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill/releases/redpill-4.4.180plus-geminilake.tgz
-            tar zxvf redpill-4.4.180plus-geminilake.tgz -C ./ && mv ./redpill.ko ./ext/rp-lkm/redpill-linux-v4.4.180+.ko
             ./ext-manager.sh add https://raw.githubusercontent.com/pocopico/rp-ext/master/redpill-dtb-static/rpext-index.json
-          fi
+            wget https://raw.githubusercontent.com/pocopico/tinycore-redpill/main/ds920p.dts
 
-          if [ ${{ steps.info.outputs.platform }} == 'DS3622xs+' ]; then
-            wget https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill/releases/redpill-4.4.180plus-broadwellnk.tgz
-            tar zxvf redpill-4.4.180plus-broadwellnk.tgz -C ./ && mv ./redpill.ko ./ext/rp-lkm/redpill-linux-v4.4.180+.ko
+            # if [ -n ${{ steps.info.outputs.dtb }} ]; then
+            #   dtbs=${{ steps.info.outputs.dtb }}
+            #
+            #   let diskslot=1
+            #   for disk in $localdisks; do
+            #     diskpath=$(udevadm info --query path --name $disk | awk -F "\/" '{print $4 ":" $5 }' | awk -F ":" '{print $2 ":" $3 "," $6}' | sed 's/,*$//')
+            #     if [ "$HYPERVISOR" == "VMware" ]; then
+            #         diskport=$(udevadm info --query path --name $disk | sed -n '/target/{s/.*target[1-9]//;p;}' | awk -F: '{print $1}')
+            #     else
+            #         diskport=$(udevadm info --query path --name $disk | sed -n '/target/{s/.*target//;p;}' | awk -F: '{print $1}')
+            #     fi
+            # 
+            #     echo "Found local disk $disk with path $diskpath, adding into internal_slot $diskslot with portnumber $diskport"
+            #     if [ "${dtbfile}" == "ds920p" ]; then
+            #         sed -i "/internal_slot\@${diskslot} {/!b;n;n;n;n;n;n;n;cpcie_root = \"$diskpath\";" ${dtbfile}.dts
+            #         sed -i "/internal_slot\@${diskslot} {/!b;n;n;n;n;n;n;n;n;cata_port = <0x$diskport>;" ${dtbfile}.dts
+            #         let diskslot=$diskslot+1
+            #     else
+            #         sed -i "/internal_slot\@${diskslot} {/!b;n;n;n;n;n;cpcie_root = \"$diskpath\";" ${dtbfile}.dts
+            #         sed -i "/internal_slot\@${diskslot} {/!b;n;n;n;n;n;n;cata_port = <0x$diskport>;" ${dtbfile}.dts
+            #         let diskslot=$diskslot+1
+            #     fi
+            #   done
+            #
+            #   let nvmeslot=1
+            #   for nvme in $localnvme; do
+            #       nvmepath=$(udevadm info --query path --name $nvme | awk -F "\/" '{print $4 ":" $5 }' | awk -F ":" '{print $2 ":" $3 "," $6}' | sed 's/,*$//')
+            #       echo "Found local nvme $nvme with path $nvmepath, adding into m2_card $nvmeslot"
+            #       if [ "${dtbfile}" == "ds920p" ]; then
+            #           sed -i "/nvme_slot\@${nvmeslot} {/!b;n;cpcie_root = \"$nvmepath\";" ${dtbfile}.dts
+            #           let diskslot=$diskslot+1
+            #       else
+            #           sed -i "/m2_card\@${nvmeslot} {/!b;n;n;n;cpcie_root = \"$nvmepath\";" ${dtbfile}.dts
+            #           let nvmeslot=$diskslot+1
+            #       fi
+            #   done
+            # fi
           fi
 
           # 添加扩展驱动
