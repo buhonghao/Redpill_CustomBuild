@@ -239,7 +239,9 @@ jobs:
                                 rpExts = f.readlines()
                             rpExts = [x.strip() for x in rpExts]
                             exts = [x.strip() for x in re.split(',| |\|',body['ext']) if x.strip()!='']
-                            if len(exts) > 0 and set(exts) <= set(rpExts):
+                            print(rpExts)
+                            print(exts)
+                            if len(exts) > 0 and len(rpExts) > 0 and set(exts) <= set(rpExts):
                                 ext = ','.join(exts)
                             else:
                                 iscustom = 'false'
