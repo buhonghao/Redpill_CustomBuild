@@ -33,14 +33,14 @@ on:
         - 7.1.0-42661
         - 7.0.1-42218
 
-      sataportmap: 
-        description: 'SataPortMap'
+      map: 
+        description: 'SataPortMap, DiskIdxMap'
         required: false
         default: ''
         type: string
 
-      diskidxmap: 
-        description: 'DiskIdxMap'
+      dtb:
+        description: '暂不可用, 待实现'
         required: false
         default: ''
         type: string
@@ -57,16 +57,10 @@ on:
         default: ''
         type: string
 
-      pid: 
-        description: 'pid'
+      usb: 
+        description: 'pid, vid'
         required: false
-        default: '0x0001'
-        type: string
-
-      vid: 
-        description: 'vid'
-        required: false
-        default: '0x46f4'
+        default: '0x0001, 0x46f4'
         type: string
 
       ext: 
@@ -74,6 +68,15 @@ on:
         required: false
         default: ''
         type: string
+
+      exp:
+        description: 'pocopico jumkey'
+        required: true
+        default: 'pocopico' 
+        type: choice
+        options:
+        - 'pocopico'
+        - 'jumkey'
 
       jun:
         description: 'jun'
@@ -105,6 +108,11 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           sudo timedatectl set-timezone "Asia/Shanghai"
+
+          sudo apt update
+          sudo apt upgrade -y
+          sudo apt install curl bspatch jq git -y
+          python -m pip install --upgrade pip setuptools
 
       - name: Get Issues
         if: github.event_name == 'issues'
@@ -141,6 +149,8 @@ jobs:
                 ext = ''
                 jun = '0'
 
+                errinfo = ''
+
                 if '${{ github.event_name }}' == 'issues':
                     if '${{ env.issuetitle }}'.lower().startswith('custom'):
                         issues = 'true'
@@ -150,55 +160,71 @@ jobs:
                         
                         if len(body) == 0:
                             iscustom = 'false'
+                            errinfo = 'body error'
 
                         if 'platform' in body:
                             if body['platform'] in ['DS3615xs', 'DS3617xs', 'DS918+', 'DS920+', 'DS3622xs+']:
                                 platform = body['platform']
                             else:
                                 iscustom = 'false'
+                                errinfo = 'platform parameter error'
 
                         if 'version' in body:
                             if body['version'] in ['7.1.0-42661', '7.0.1-42218']:
                                 version = body['version']
                             else:
                                 iscustom = 'false'
+                                errinfo = 'version parameter error'
 
-                        if 'sataportmap' in body:
-                            if body['sataportmap'].isdigit():
-                                sataportmap = body['sataportmap']
-                            else:
+                        if 'map' in body:
+                            maps = [x.strip() for x in re.split(',| |\|',body['map']) if x.strip()!='']
+                            if len(maps) != 2:
                                 iscustom = 'false'
-
-                        if 'diskidxmap' in body:
-                            if all(c in string.hexdigits for c in body['diskidxmap']) and len(body['diskidxmap']) == 2 * len(body['sataportmap']):
-                                diskidxmap = body['diskidxmap']
+                                errinfo = 'map parameter error'
                             else:
-                                iscustom = 'false'
+                                if maps[0].isdigit():
+                                    sataportmap = maps[0]
+                                else:
+                                    iscustom = 'false'
+                                    errinfo = 'map[sataportmap] parameter error'
+                                if all(c in string.hexdigits for c in maps[1]) and len(maps[1]) == 2 * len(maps[0]):
+                                    diskidxmap = maps[1]
+                                else:
+                                    iscustom = 'false'
+                                    errinfo = 'map[diskidxmap] parameter error'
 
                         if 'sn' in body:
                             if body['sn'].isalnum():
                                 sn = body['sn']
                             else:
                                 iscustom = 'false'
-                        
+                                errinfo = 'sn parameter error'
+
                         if 'mac' in body:
                             macs = [x.strip() for x in re.split(',| |\|',body['mac']) if x.strip()!='']
                             if len(macs) <= 0 or len(macs) > 8:
                                 iscustom = 'false'
+                                errinfo = 'mac parameter error'
                             else:
                                 mac = ','.join(macs)
                         
-                        if 'pid' in body:
-                            if len(body['pid']) == 6 and body['pid'].lower().startswith('0x') and all(c in string.hexdigits for c in body['pid'][2:]):
-                                pid = body['pid'].lower()
-                            else:
+                        if 'usb' in body:
+                            usbs = [x.strip() for x in re.split(',| |\|',body['usb']) if x.strip()!='']
+                            if len(usbs) != 2:
                                 iscustom = 'false'
+                                errinfo = 'usb parameter error'
+                            else:
+                                if len(usbs[0]) == 6 and usbs[0].lower().startswith('0x') and all(c in string.hexdigits for c in usbs[0][2:]):
+                                    pid = usbs[0].lower()
+                                else:
+                                    iscustom = 'false'
+                                    errinfo = 'usb[pid] parameter error'
 
-                        if 'vid' in body:
-                            if len(body['vid']) == 6 and body['vid'].lower().startswith('0x') and all(c in string.hexdigits for c in body['vid'][2:]):
-                                vid = body['vid'].lower()
-                            else:
-                                iscustom = 'false'
+                                if len(usbs[1]) == 6 and usbs[1].lower().startswith('0x') and all(c in string.hexdigits for c in usbs[1][2:]):
+                                    vid = usbs[1].lower()
+                                else:
+                                    iscustom = 'false'
+                                    errinfo = 'usb[vid] parameter error'
 
                         if 'ext' in body:
                             try:
@@ -213,32 +239,50 @@ jobs:
                                 rpExts = f.readlines()
                             rpExts = [x.strip() for x in rpExts]
                             exts = [x.strip() for x in re.split(',| |\|',body['ext']) if x.strip()!='']
-                            if len(exts) > 0 and not set(exts) <= set(rpExts):
+                            if len(exts) > 0 and set(exts) <= set(rpExts):
                                 ext = ','.join(exts)
                             else:
                                 iscustom = 'false'
+                                errinfo = 'ext parameter error'
+
+                        if 'exp' in body:
+                            if body['exp'] in ['jumkey', 'pocopico']:
+                                exp = body['exp']
+                            else:
+                                iscustom = 'false'
+                                errinfo = 'exp parameter error'
 
                         if 'jun' in body:
                             if body['jun'] in ['0', '1']:
                                 jun = body['jun']
                             else:
                                 iscustom = 'false'
+                                errinfo = 'jun parameter error'
+
                     else:
                         iscustom = 'false'
                 else:
                     platform = '${{ inputs.platform }}'
                     version = '${{ inputs.version }}'
-                    sataportmap = '${{ inputs.sataportmap }}'
-                    diskidxmap = '${{ inputs.diskidxmap }}'
+                    maps = [x.strip() for x in re.split(',| |\|','${{ inputs.map }}') if x.strip()!='']
+                    if len(maps) != 2:
+                        maps = ['','']
+                    sataportmap = maps[0]
+                    diskidxmap = maps[1]
                     sn = '${{ inputs.sn }}'
-                    pid = '${{ inputs.pid }}'
-                    vid = '${{ inputs.vid }}'
+                    usbs = [x.strip() for x in re.split(',| |\|','${{ inputs.usb }}') if x.strip()!='']
+                    if len(usbs) != 2:
+                        usbs = ['','']
+                    pid = usbs[0]
+                    vid = usbs[1]
                     mac = '${{ inputs.mac }}'
                     ext = '${{ inputs.ext }}'
+                    exp = '${{ inputs.exp }}'
                     jun = '${{ inputs.jun }}'
 
                 set_output('issues', issues)
                 set_output('iscustom', iscustom)
+                set_output('errinfo', errinfo)
 
                 set_output('platform', platform)
                 set_output('version', version)
@@ -249,6 +293,7 @@ jobs:
                 set_output('pid', pid)
                 set_output('vid', vid)
                 set_output('ext', ext)
+                set_output('exp', exp)
                 set_output('jun', jun)
 
       - name: Add labels
@@ -287,10 +332,12 @@ jobs:
           body: |
             ${{ github.event.issue.user.login }} 您好.
             您自定义 Redpill 所填写的信息无法解析, 请参考模板并请重新发起定制。  
+            error info: ${{ steps.info.outputs.errinfo }}
             > 
             ----
             Hi ${{ github.event.issue.user.login }}. 
             The information filled in by your customized Redpill cannot be parsed. Please refer to the template and restart customization.
+            error info: ${{ steps.info.outputs.errinfo }}
             > 
           emoji: confused
 
@@ -396,15 +443,20 @@ jobs:
             pwd
           }
 
-          sudo apt update
-          sudo apt-get install curl bspatch jq git -y
+          # 开始表演
 
-          if [ ${{ steps.info.outputs.version }} == '7.1.0-42661' ]; then 
-            git clone https://github.com/pocopico/redpill-load.git redpill-load
-          else
-            git clone https://github.com/jumkey/redpill-load.git redpill-load
-          fi 
-          
+          repo=${{ steps.info.outputs.exp }}
+          branch=develop
+          bArgs=''
+          if [ ${{ steps.info.outputs.jun }} == '1' ]; then 
+            bArgs='BRP_JUN_MOD=1 BRP_DEBUG=1'
+            if [ ${repo} == 'pocopico' ]; then 
+              branch=jun
+            fi
+          fi
+
+          git clone -b ${branch} https://github.com/${repo}/redpill-load redpill-load
+
           cp user_config.json redpill-load/user_config.json
 
           cd redpill-load
@@ -420,10 +472,10 @@ jobs:
           fi
 
           # 添加必备驱动
-          # ./ext-manager.sh add https://github.com/pocopico/redpill-load/blob/master/redpill-boot-wait/rpext-index.json
-          ./ext-manager.sh add https://github.com/pocopico/redpill-load/raw/master/redpill-acpid/rpext-index.json
-          ./ext-manager.sh add https://github.com/pocopico/redpill-load/raw/master/redpill-misc/rpext-index.json
-          ./ext-manager.sh add https://github.com/pocopico/redpill-load/raw/master/redpill-virtio/rpext-index.json
+          #./ext-manager.sh add https://raw.githubusercontent.com/${repo}/redpill-load/${branch}/redpill-boot-wait/rpext-index.json
+          ./ext-manager.sh add https://raw.githubusercontent.com/${repo}/redpill-load/${branch}/redpill-acpid/rpext-index.json
+          ./ext-manager.sh add https://raw.githubusercontent.com/${repo}/redpill-load/${branch}/redpill-misc/rpext-index.json
+          ./ext-manager.sh add https://raw.githubusercontent.com/${repo}/redpill-load/${branch}/redpill-virtio/rpext-index.json
 
           if [ ${{ steps.info.outputs.platform }} == 'DS3615xs' ]; then
             wget https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill/releases/redpill-3.10.108.tgz
@@ -463,7 +515,7 @@ jobs:
 
           # 编译
           # sed -i "s|#!/usr/bin/env bash|#!/usr/bin/env -S bash -x|g" ./build-loader.sh
-          sudo BRP_JUN_MOD=${{ steps.info.outputs.jun }} BRP_DEBUG=1 BRP_USER_CFG=user_config.json ./build-loader.sh '${{ steps.info.outputs.platform }}' '${{ steps.info.outputs.version }}'
+          sudo ${bArgs} BRP_USER_CFG=user_config.json ./build-loader.sh '${{ steps.info.outputs.platform }}' '${{ steps.info.outputs.version }}'
 
       - name: Generate release tag
         if: steps.info.outputs.iscustom == 'true' && success()
@@ -474,16 +526,10 @@ jobs:
             echo "👉 issues: [#${{ github.event.issue.number }}]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/issues/${{ github.event.issue.number }})" >> $GITHUB_STEP_SUMMARY
           else
             echo "👉 "platform": "${{ steps.info.outputs.platform }}"  " >> $GITHUB_STEP_SUMMARY
-            echo "👉 "version": "${{ steps.info.outputs.version }}"  " >> $GITHUB_STEP_SUMMARY
-            echo "👉 "sataportmap": "${{ steps.info.outputs.sataportmap }}"  " >> $GITHUB_STEP_SUMMARY
-            echo "👉 "diskidxmap": "${{ steps.info.outputs.diskidxmap }}"  " >> $GITHUB_STEP_SUMMARY
-            echo "👉 "sn": "${{ steps.info.outputs.sn }}"  " >> $GITHUB_STEP_SUMMARY
-            echo "👉 "mac": "${{ steps.info.outputs.mac }}"  " >> $GITHUB_STEP_SUMMARY
-            echo "👉 "pid": "${{ steps.info.outputs.pid }}"  " >> $GITHUB_STEP_SUMMARY
-            echo "👉 "vid": "${{ steps.info.outputs.vid }}"  " >> $GITHUB_STEP_SUMMARY
+            echo "👉 "version": "${{ steps.info.outputs.version }}", "jun": "${{ steps.info.outputs.jun }}"  " >> $GITHUB_STEP_SUMMARY
             echo "👉 "ext": "${{ steps.info.outputs.ext }}"  " >> $GITHUB_STEP_SUMMARY
-            echo "👉 "jun": "${{ steps.info.outputs.jun }}"  " >> $GITHUB_STEP_SUMMARY
           fi
+
           echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
           echo "::set-output name=repository_name::$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}')"
 
