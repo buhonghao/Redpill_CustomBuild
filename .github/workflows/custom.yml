@@ -147,6 +147,7 @@ jobs:
                 pid = ''
                 vid = ''
                 ext = ''
+                exp = 'pocopico'
                 jun = '0'
 
                 errinfo = ''
