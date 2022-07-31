@@ -25,14 +25,15 @@ on:
         - DS3622xs+
 
       version:
-        description: '7.1.0-42661 7.0.1-42218'
+        description: '7.1.0-42661 7.0.1-42218 6.2.4-25556'
         required: true
         default: '7.1.0-42661' 
         type: choice
         options:
         - 7.1.0-42661
         - 7.0.1-42218
-
+        - 6.2.4-25556
+        
       map: 
         description: 'SataPortMap, DiskIdxMap'
         required: false
@@ -171,7 +172,7 @@ jobs:
                                 errinfo = 'platform parameter error'
 
                         if 'version' in body:
-                            if body['version'] in ['7.1.0-42661', '7.0.1-42218']:
+                            if body['version'] in ['7.1.0-42661', '7.0.1-42218', '6.2.4-25556']:
                                 version = body['version']
                             else:
                                 iscustom = 'false'
@@ -367,8 +368,7 @@ jobs:
                         "support_disk_compatibility": "no",
                         "support_memory_compatibility": "no"
                     },
-                    "ramdisk_copy": {},
-                    "extensions": []
+                    "ramdisk_copy": {}
                 }
 
                 if '${{ steps.info.outputs.sataportmap }}' != '':
@@ -557,6 +557,8 @@ jobs:
           # 编译
           # sed -i "s|#!/usr/bin/env bash|#!/usr/bin/env -S bash -x|g" ./build-loader.sh
           sudo ${bArgs} BRP_USER_CFG=user_config.json ./build-loader.sh '${{ steps.info.outputs.platform }}' '${{ steps.info.outputs.version }}'
+
+          ls -al ./custom/extensions
 
       - name: Generate release tag
         if: steps.info.outputs.iscustom == 'true' && success()
