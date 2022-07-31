@@ -33,7 +33,7 @@ fork 本项目 通过 Actions 填写相关参数进行构建。
 platform  | √    |"DS918+"        | "DS3615xs", "DS3617xs", "DS918+", "DS920+", "DS3622xs+"  
 version   | √    |"7.1.0-42661"   | "7.1.0-42661", "7.0.1-42218", "6.2.4-25556"  
 map       | ×    |-               | 控制器的盘数和盘序[格式: sataportmap, diskidxmap]. 默认无. eg: "0, 10"  
-dtb       | ×    |-               | 暂不可用, 待实现.  
+dtb       | ×    |-               | 暂不可用, 待实现.  [#47](https://github.com/wjz304/Redpill_CustomBuild/issues/47)
 sn        | ×    |-               | 序列号. 默认根据型号随机生成.  
 mac       | ×    |-               | 多个请以 "," 间隔. 默认根据型号随机生成. eg: "001132888A95, 001132888A96"  
 usb       | ×    |"0x0001, 0x46f4"| 设备识别码（pid）和供应商ID（vid）[格式: pid, vid]. 默认无.  eg: "0xa4a5, 0x0525"  
@@ -56,10 +56,12 @@ jun       | ×    |"0"             | 仅7.0.1-42218 版本可以选择jun模式�
     }  
 
 ## 写在这里
-1. 当前 7.0.1-42218 使用 jumkey库 的构建。7.1.0-42661 使用 pocopico库 构建。
+1. pocopico 还是 jumkey 我抉择不了就让你们自己决定把。
 2. ext 当前使用 pocopico 库。
 3. 驱动默认集成 acpid, misc, virtio, dtb-static(only DS920+)。
 4. SN&MAC算号使用 pocopico 的脚本。
+5. custom.gz 解压有概率乱码, 脑袋疼....
+
 
 
 
