@@ -41,7 +41,7 @@ on:
         type: string
 
       dtb:
-        description: '暂不可用, 待实现'
+        description: 'URL of dtb file(support ext: .dts,.dtb,.tar.gz,.zip)'
         required: false
         default: ''
         type: string
@@ -88,6 +88,48 @@ on:
         - '0'
         - '1'
 
+  workflow_call:
+    inputs:
+      platform:
+        required: true
+        type: string
+
+      version:
+        required: true
+        type: string
+
+      map: 
+        required: true
+        type: string
+
+      dtb: 
+        required: true
+        type: string
+
+      sn:
+        required: true
+        type: string
+
+      mac: 
+        required: true
+        type: string
+
+      usb: 
+        required: true
+        type: string
+
+      ext:
+        required: true
+        type: string
+      
+      exp: 
+        required: true
+        type: string
+
+      jun:
+        required: true
+        type: string
+        
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -110,9 +152,6 @@ jobs:
           git config --global user.name "github-actions[bot]"
           sudo timedatectl set-timezone "Asia/Shanghai"
 
-          sudo apt update
-          sudo apt upgrade -y
-          sudo apt install curl bspatch jq git -y
           python -m pip install --upgrade pip setuptools
 
       - name: Get Issues
@@ -132,21 +171,21 @@ jobs:
         id: info
         with:
           script: |
-            import os, re, json, string
+            import os, re, json, shutil, string, subprocess
 
             if __name__ == '__main__':
 
                 issues = 'false'
                 iscustom = 'true'
+                errinfo = ''
 
                 platform = 'DS918+'
                 version = '7.1.0-42661'
-                sataportmap = ''
-                diskidxmap = ''
+                map = ''
+                dtb = ''
                 sn = ''
                 mac = ''
-                pid = ''
-                vid = ''
+                usb = ''
                 ext = ''
                 exp = 'pocopico'
                 jun = '0'
@@ -158,131 +197,168 @@ jobs:
                         issues = 'true'
 
                         body = {}
-                        body = json.loads('${{ env.issuebodys }}')
-                        
-                        if len(body) == 0:
+                        try:
+                            body = json.loads('${{ env.issuebodys }}')
+                            if len(body) == 0:
+                                iscustom = 'false'
+                                errinfo = 'body error, body is null'
+                            else:
+                                if 'platform' in body: platform = body['platform']
+                                if 'version' in body: version = body['version']
+                                if 'map' in body: map = body['map']
+                                if 'dtb' in body: dtb = body['dtb']
+                                if 'sn' in body: sn = body['sn']
+                                if 'mac' in body: mac = body['mac']
+                                if 'usb' in body: usb = body['usb']
+                                if 'ext' in body: ext = body['ext']
+                                if 'exp' in body: exp = body['exp']
+                                if 'jun' in body: jun = body['jun']
+                        except Exception as err:
                             iscustom = 'false'
-                            errinfo = 'body error'
-
-                        if 'platform' in body:
-                            if body['platform'] in ['DS3615xs', 'DS3617xs', 'DS918+', 'DS920+', 'DS3622xs+']:
-                                platform = body['platform']
-                            else:
-                                iscustom = 'false'
-                                errinfo = 'platform parameter error'
-
-                        if 'version' in body:
-                            if body['version'] in ['7.1.0-42661', '7.0.1-42218', '6.2.4-25556']:
-                                version = body['version']
-                            else:
-                                iscustom = 'false'
-                                errinfo = 'version parameter error'
-
-                        if 'map' in body:
-                            maps = [x.strip() for x in re.split(',| |\|',body['map']) if x.strip()!='']
-                            if len(maps) != 2:
-                                iscustom = 'false'
-                                errinfo = 'map parameter error'
-                            else:
-                                if maps[0].isdigit():
-                                    sataportmap = maps[0]
-                                else:
-                                    iscustom = 'false'
-                                    errinfo = 'map[sataportmap] parameter error'
-                                if all(c in string.hexdigits for c in maps[1]) and len(maps[1]) == 2 * len(maps[0]):
-                                    diskidxmap = maps[1]
-                                else:
-                                    iscustom = 'false'
-                                    errinfo = 'map[diskidxmap] parameter error'
-
-                        if 'sn' in body:
-                            if body['sn'].isalnum():
-                                sn = body['sn']
-                            else:
-                                iscustom = 'false'
-                                errinfo = 'sn parameter error'
-
-                        if 'mac' in body:
-                            macs = [x.strip() for x in re.split(',| |\|',body['mac']) if x.strip()!='']
-                            if len(macs) <= 0 or len(macs) > 8:
-                                iscustom = 'false'
-                                errinfo = 'mac parameter error'
-                            else:
-                                mac = ','.join(macs)
-                        
-                        if 'usb' in body:
-                            usbs = [x.strip() for x in re.split(',| |\|',body['usb']) if x.strip()!='']
-                            if len(usbs) != 2:
-                                iscustom = 'false'
-                                errinfo = 'usb parameter error'
-                            else:
-                                if len(usbs[0]) == 6 and usbs[0].lower().startswith('0x') and all(c in string.hexdigits for c in usbs[0][2:]):
-                                    pid = usbs[0].lower()
-                                else:
-                                    iscustom = 'false'
-                                    errinfo = 'usb[pid] parameter error'
-
-                                if len(usbs[1]) == 6 and usbs[1].lower().startswith('0x') and all(c in string.hexdigits for c in usbs[1][2:]):
-                                    vid = usbs[1].lower()
-                                else:
-                                    iscustom = 'false'
-                                    errinfo = 'usb[vid] parameter error'
-
-                        if 'ext' in body:
-                            try:
-                                import wget
-                            except ModuleNotFoundError:
-                                os.system('pip3 install wget')
-                                import wget
-                            if os.path.exists('rpExtsFile'):
-                                os.remove('rpExtsFile')
-                            res = wget.download('https://raw.githubusercontent.com/pocopico/rp-ext/main/exts', out='rpExtsFile')
-                            with open('rpExtsFile', mode="r") as f:
-                                rpExts = f.readlines()
-                            rpExts = [x.strip() for x in rpExts]
-                            exts = [x.strip() for x in re.split(',| |\|',body['ext']) if x.strip()!='']
-                            print(rpExts)
-                            print(exts)
-                            if len(exts) > 0 and set(exts) <= set(rpExts):
-                                ext = ','.join(exts)
-                            else:
-                                iscustom = 'false'
-                                errinfo = 'ext parameter error'
-
-                        if 'exp' in body:
-                            if body['exp'] in ['pocopico', 'jumkey']:
-                                exp = body['exp']
-                            else:
-                                iscustom = 'false'
-                                errinfo = 'exp parameter error'
-
-                        if 'jun' in body:
-                            if body['jun'] in ['0', '1']:
-                                jun = body['jun']
-                            else:
-                                iscustom = 'false'
-                                errinfo = 'jun parameter error'
-
+                            errinfo = 'body error, {}.'.format(err)
                     else:
                         iscustom = 'false'
                 else:
                     platform = '${{ inputs.platform }}'
                     version = '${{ inputs.version }}'
-                    maps = [x.strip() for x in re.split(',| |\|','${{ inputs.map }}') if x.strip()!='']
-                    if len(maps) != 2:
-                        maps = ['','']
-                    sataportmap = maps[0]
-                    diskidxmap = maps[1]
+                    map = '${{ inputs.map }}'
+                    dtb = '${{ inputs.dtb }}'
                     sn = '${{ inputs.sn }}'
-                    usbs = [x.strip() for x in re.split(',| |\|','${{ inputs.usb }}') if x.strip()!='']
-                    if len(usbs) != 2:
-                        usbs = ['','']
-                    pid = usbs[0]
-                    vid = usbs[1]
                     mac = '${{ inputs.mac }}'
+                    usb = '${{ inputs.usb }}'
                     ext = '${{ inputs.ext }}'
                     exp = '${{ inputs.exp }}'
                     jun = '${{ inputs.jun }}'
+
+
+                if not platform in ['DS3615xs', 'DS3617xs', 'DS918+', 'DS920+', 'DS3622xs+']:
+                    iscustom = 'false'
+                    errinfo = 'platform parameter error'
+
+                if not version in ['7.1.0-42661', '7.0.1-42218', '6.2.4-25556']:
+                    iscustom = 'false'
+                    errinfo = 'version parameter error'
+
+                if map != '':
+                    maps = [x.strip() for x in re.split(',| |\|', map) if x.strip() != '']
+                    if len(maps) == 2 and maps[0].isdigit() and all(c in string.hexdigits for c in maps[1]) and len(maps[1]) == 2 * len(maps[0]):
+                        map = ','.join(maps)
+                    else:
+                        iscustom = 'false'
+                        errinfo = 'map parameter error'
+
+                if dtb != '':
+                    url = dtb
+                    try:
+                        try:
+                            import wget, filetype
+                        except ModuleNotFoundError:
+                            os.system('pip3 install wget filetype')
+                            import wget, filetype
+                    
+                        res = wget.download(url)
+                        if res:
+                            down = res
+                            kind = filetype.guess(down)
+                            name = 'user'
+                            if os.path.exists('extract'):  
+                                shutil.rmtree('extract')
+                            if kind.extension == 'zip':
+                                import zipfile
+                                z = zipfile.ZipFile(down, 'r')
+                                z.extractall('extract')
+                            if kind.extension in ['tar', 'gz']:
+                                import tarfile
+                                z = tarfile.open(down) 
+                                z.extractall('extract')
+                            if os.path.exists('extract'):
+                                isfind = False
+                                for root, dirs, files in os.walk('extract'):
+                                    for file in files:
+                                        if file.endswith('.dts') or file.endswith('.dtb'):
+                                            isfind = True
+                                            down = name + os.path.splitext(file)[-1]
+                                            shutil.move(os.path.join(root, file), down)
+                                            break
+                                    if isfind is True:
+                                        break
+
+                            if os.path.exists(down) and (down.endswith('dts') or down.endswith('dtb')):
+                                if down.endswith('dts'):
+                                    wget.download('https://raw.githubusercontent.com/pocopico/rp-ext/main/redpill-dtb-static/releases/dtc')
+                                    if os.path.exists('dtc'):
+                                        print('./dtc -q -I dts -O dtb {} >{}.dtb'.format(down, name))
+                                        os.system('sudo chmod a+x dtc')
+                                        p = subprocess.Popen('sudo ./dtc -q -I dts -O dtb {} >{}.dtb'.format(down, name), shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                        errinfo = p.stderr.read().decode('utf-8')
+                                        os.system('sudo ./dtc -q -I dts -O dtb {} >{}.dtb'.format(down, name))
+                                        if os.path.exists('{}.dtb'.format(name)) and os.path.getsize('{}.dtb'.format(name)) > 0:
+                                            print('dtc ok ...')
+                                            dtb = os.path.abspath('{}.dtb'.format(name))
+                                        else:
+                                            iscustom = 'false'
+                                            errinfo = 'dtb parameter error, <{}>.'.format(errinfo.replace('\r', '').replace('\n', ' '))
+                                    else:
+                                        iscustom = 'false'
+                                        errinfo = 'dtb parameter error, <dtc tool download error, Please try again later>.'
+                                else:
+                                    dtb = os.path.abspath(down)
+                            else:
+                                iscustom = 'false'
+                                errinfo = 'dtb parameter error, <urlfile error no valid ".dts/.dtb" file found>.'
+                    except Exception as err:
+                        iscustom = 'false'
+                        errinfo = 'dtb parameter error, {}.'.format(err)
+
+                if sn != '' and not sn.isalnum():
+                    iscustom = 'false'
+                    errinfo = 'sn parameter error'
+
+                if mac != '':
+                    macs = [x.strip() for x in re.split(',| |\|', mac) if x.strip() != '']
+                    if len(macs) > 0 or len(macs) <= 8:
+                        mac = ','.join(macs)
+                    else:
+                        iscustom = 'false'
+                        errinfo = 'mac parameter error'
+
+                if usb != '':
+                    usbs = [x.strip() for x in re.split(',| |\|', usb) if x.strip() != '']
+                    if len(usbs) == 2 \
+                    and len(usbs[0]) == 6 and usbs[0].lower().startswith('0x') and all(c in string.hexdigits for c in usbs[0][2:]) \
+                    and len(usbs[1]) == 6 and usbs[1].lower().startswith('0x') and all(c in string.hexdigits for c in usbs[1][2:]):
+                        usb = ','.join(usbs)
+                    else:
+                        iscustom = 'false'
+                        errinfo = 'usb parameter error'
+
+
+                if ext != '':
+                    try:
+                        import wget
+                    except ModuleNotFoundError:
+                        os.system('pip3 install wget')
+                        import wget
+                    if os.path.exists('rpExtsFile'):
+                        os.remove('rpExtsFile')
+                    res = wget.download('https://raw.githubusercontent.com/pocopico/rp-ext/main/exts', out='rpExtsFile')
+                    with open('rpExtsFile', mode="r") as f:
+                        rpExts = f.readlines()
+                    rpExts = [x.strip() for x in rpExts]
+                    exts = [x.strip() for x in re.split(',| |\|', ext) if x.strip() != '']
+                    if len(exts) > 0 and set(exts) <= set(rpExts):
+                        ext = ','.join(exts)
+                    else:
+                        iscustom = 'false'
+                        errinfo = 'ext parameter error'
+
+                if not exp in ['pocopico', 'jumkey']:
+                    iscustom = 'false'
+                    errinfo = 'exp parameter error'
+
+                if not jun in ['0', '1']:
+                    iscustom = 'false'
+                    errinfo = 'jun parameter error'
 
                 set_output('issues', issues)
                 set_output('iscustom', iscustom)
@@ -290,15 +366,30 @@ jobs:
 
                 set_output('platform', platform)
                 set_output('version', version)
-                set_output('sataportmap', sataportmap)
-                set_output('diskidxmap', diskidxmap)
+                set_output('map', map)
+                set_output('dtb', dtb)
                 set_output('sn', sn)
                 set_output('mac', mac)
-                set_output('pid', pid)
-                set_output('vid', vid)
+                set_output('usb', usb)
                 set_output('ext', ext)
                 set_output('exp', exp)
                 set_output('jun', jun)
+
+      - name: Echo Info
+        run: |
+          echo "issues:    ${{ steps.info.outputs.issues }}"
+          echo "iscustom:  ${{ steps.info.outputs.iscustom }}"
+          echo "errinfo:    ${{ steps.info.outputs.errinfo }}"
+          echo "platform:  ${{ steps.info.outputs.platform }}"
+          echo "version:   ${{ steps.info.outputs.version }}"
+          echo "map:       ${{ steps.info.outputs.map }}"
+          echo "dtb:       ${{ steps.info.outputs.dtb }}"
+          echo "sn:        ${{ steps.info.outputs.sn }}"
+          echo "mac:       ${{ steps.info.outputs.mac }}"
+          echo "usb:       ${{ steps.info.outputs.usb }}"
+          echo "ext:       ${{ steps.info.outputs.ext }}"
+          echo "exp:       ${{ steps.info.outputs.exp }}"
+          echo "jun:       ${{ steps.info.outputs.jun }}"
 
       - name: Add labels
         if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true'
@@ -371,16 +462,6 @@ jobs:
                     "ramdisk_copy": {}
                 }
 
-                if '${{ steps.info.outputs.sataportmap }}' != '':
-                    config["extra_cmdline"]["SataPortMap"] = '${{ steps.info.outputs.sataportmap }}'
-                if '${{ steps.info.outputs.diskidxmap }}' != '':
-                    config["extra_cmdline"]["DiskIdxMap"] = '${{ steps.info.outputs.diskidxmap }}'
-                  
-                if '${{ steps.info.outputs.pid }}' != '':
-                  config["extra_cmdline"]["pid"] = '${{ steps.info.outputs.pid }}'
-                if '${{ steps.info.outputs.vid }}' != '':
-                  config["extra_cmdline"]["vid"] = '${{ steps.info.outputs.vid }}'
-
                 dat = []
                 if '${{ steps.info.outputs.sn }}' == '' or '${{ steps.info.outputs.mac }}' == '':
                     try:
@@ -393,21 +474,34 @@ jobs:
                     os.system('sed -i "s|echo.*\$(generateMacAddress)|echo \$(generateMacAddress)|g" serialnumbergen.sh')
                     os.system('sed -i "s|echo.*\$(generateSerial \$1)|echo \$(generateSerial \$1)|g" serialnumbergen.sh')
                     dat = os.popen('bash ./serialnumbergen.sh ${{ steps.info.outputs.platform }}').readlines()
-                
+
                 if '${{ steps.info.outputs.sn }}' != '':
                     config["extra_cmdline"]["sn"] = '${{ steps.info.outputs.sn }}'
                 elif len(dat) == 2:
                     config["extra_cmdline"]["sn"] = dat[1].strip()
 
                 if '${{ steps.info.outputs.mac }}' != '':
-                    for index, item in enumerate('${{ steps.info.outputs.mac }}'.split(',')):
+                    macs = '${{ steps.info.outputs.mac }}'.split(',')
+                    for index, item in enumerate(macs):
                         config["extra_cmdline"]["mac{}".format(index+1)] = item.replace(':', '').upper()
-                    config["extra_cmdline"]["netif_num"] = len('${{ steps.info.outputs.mac }}'.split(','))
+                    config["extra_cmdline"]["netif_num"] = len(macs)
                 elif len(dat) == 2:
                     config["extra_cmdline"]["mac1"] = dat[0].strip().replace(':', '')
                     config["extra_cmdline"]["mac2"] = hex(int(dat[0].strip().replace(':', ''), 16) + 1)[2:].rjust(12,'0').upper()
                     config["extra_cmdline"]["netif_num"] = 2
-                
+
+                if '${{ steps.info.outputs.map }}' != '':
+                    maps = '${{ steps.info.outputs.map }}'.split(',')
+                    if len(maps) == 2:
+                        config["extra_cmdline"]["SataPortMap"] = maps[0]
+                        config["extra_cmdline"]["DiskIdxMap"] = maps[1]
+
+                if '${{ steps.info.outputs.usb }}' != '':
+                    usbs = '${{ steps.info.outputs.usb }}'.split(',')
+                    if len(usbs) == 2:
+                        config["extra_cmdline"]["pid"] = usbs[0]
+                        config["extra_cmdline"]["vid"] = usbs[1]
+
                 if '${{ steps.info.outputs.platform }}' in ['DS918+', 'DS920+']:
                     config["synoinfo"]["maxdisks"] = "9"
 
@@ -446,6 +540,10 @@ jobs:
             pwd
           }
 
+          sudo apt update
+          sudo apt upgrade -y
+          sudo apt install curl bspatch jq git -y
+
           # 开始表演
 
           repo=${{ steps.info.outputs.exp }}
@@ -481,7 +579,8 @@ jobs:
           ./ext-manager.sh add https://raw.githubusercontent.com/${repo}/redpill-load/${branch}/redpill-virtio/rpext-index.json
 
           # redpill.ko 方式一 
-          synomodel=$(echo ${{ steps.info.outputs.platform }} | sed 's/DS/ds/g; s/+/p/g')_$(echo ${{ steps.info.outputs.version }} | awk -F - '{print $2}')
+          synopform=$(echo ${{ steps.info.outputs.platform }} | sed 's/DS/ds/g; s/+/p/g')
+          synomodel=${synopform}_$(echo ${{ steps.info.outputs.version }} | awk -F - '{print $2}')
           extension=$(curl -s --location "https://raw.githubusercontent.com/pocopico/rp-ext/master/redpill/rpext-index.json")
           redpilltgz=$(curl -s --location "$(echo ${extension} | jq -r .releases.$synomodel)" | jq -r '.files[] .url')
           [ "$(echo $redpilltgz | awk '{print $NF}')" != "$redpilltgz" ] && redpilltgz=$(echo $redpilltgz | awk '{print $1}')
@@ -503,45 +602,14 @@ jobs:
 
           if [ ${{ steps.info.outputs.platform }} == 'DS920+' ]; then
             ./ext-manager.sh add https://raw.githubusercontent.com/pocopico/rp-ext/master/redpill-dtb-static/rpext-index.json
-            wget https://raw.githubusercontent.com/pocopico/tinycore-redpill/main/ds920p.dts
+            ./ext-manager.sh _update_platform_exts ${synomodel} redpill-dtb-static
 
-            # if [ -n ${{ steps.info.outputs.dtb }} ]; then
-            #   dtbs=${{ steps.info.outputs.dtb }}
-            #
-            #   let diskslot=1
-            #   for disk in $localdisks; do
-            #     diskpath=$(udevadm info --query path --name $disk | awk -F "\/" '{print $4 ":" $5 }' | awk -F ":" '{print $2 ":" $3 "," $6}' | sed 's/,*$//')
-            #     if [ "$HYPERVISOR" == "VMware" ]; then
-            #         diskport=$(udevadm info --query path --name $disk | sed -n '/target/{s/.*target[1-9]//;p;}' | awk -F: '{print $1}')
-            #     else
-            #         diskport=$(udevadm info --query path --name $disk | sed -n '/target/{s/.*target//;p;}' | awk -F: '{print $1}')
-            #     fi
-            # 
-            #     echo "Found local disk $disk with path $diskpath, adding into internal_slot $diskslot with portnumber $diskport"
-            #     if [ "${dtbfile}" == "ds920p" ]; then
-            #         sed -i "/internal_slot\@${diskslot} {/!b;n;n;n;n;n;n;n;cpcie_root = \"$diskpath\";" ${dtbfile}.dts
-            #         sed -i "/internal_slot\@${diskslot} {/!b;n;n;n;n;n;n;n;n;cata_port = <0x$diskport>;" ${dtbfile}.dts
-            #         let diskslot=$diskslot+1
-            #     else
-            #         sed -i "/internal_slot\@${diskslot} {/!b;n;n;n;n;n;cpcie_root = \"$diskpath\";" ${dtbfile}.dts
-            #         sed -i "/internal_slot\@${diskslot} {/!b;n;n;n;n;n;n;cata_port = <0x$diskport>;" ${dtbfile}.dts
-            #         let diskslot=$diskslot+1
-            #     fi
-            #   done
-            #
-            #   let nvmeslot=1
-            #   for nvme in $localnvme; do
-            #       nvmepath=$(udevadm info --query path --name $nvme | awk -F "\/" '{print $4 ":" $5 }' | awk -F ":" '{print $2 ":" $3 "," $6}' | sed 's/,*$//')
-            #       echo "Found local nvme $nvme with path $nvmepath, adding into m2_card $nvmeslot"
-            #       if [ "${dtbfile}" == "ds920p" ]; then
-            #           sed -i "/nvme_slot\@${nvmeslot} {/!b;n;cpcie_root = \"$nvmepath\";" ${dtbfile}.dts
-            #           let diskslot=$diskslot+1
-            #       else
-            #           sed -i "/m2_card\@${nvmeslot} {/!b;n;n;n;cpcie_root = \"$nvmepath\";" ${dtbfile}.dts
-            #           let nvmeslot=$diskslot+1
-            #       fi
-            #   done
-            # fi
+            if [ -n ${{ steps.info.outputs.dtb }} ]; then
+              dtbuserfile="${{ steps.info.outputs.dtb }}"
+              dtbextfile="$(find custom -name model_${synopform}.dtb)"
+              echo Copying ${dtbuserfile} to ${dtbextfile} ...
+              sudo cp ${dtbuserfile} ${dtbextfile}
+            fi
           fi
 
           # 添加扩展驱动
