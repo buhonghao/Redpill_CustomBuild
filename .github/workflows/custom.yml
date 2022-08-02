@@ -594,7 +594,7 @@ jobs:
             ./ext-manager.sh add https://raw.githubusercontent.com/pocopico/rp-ext/master/redpill-dtb-static/rpext-index.json
             ./ext-manager.sh _update_platform_exts ${synomodel} redpill-dtb-static
 
-            if [ -n ${{ steps.info.outputs.dtb }} ]; then
+            if [ -n "${{ steps.info.outputs.dtb }}" ]; then
               dtbuserfile="${{ steps.info.outputs.dtb }}"
               dtbextfile="$(find custom -name model_${synopform}.dtb)"
               echo Copying ${dtbuserfile} to ${dtbextfile} ...
@@ -603,7 +603,7 @@ jobs:
           fi
 
           # 添加扩展驱动
-          if [ -n ${{ steps.info.outputs.ext }} ]; then
+          if [ -n "${{ steps.info.outputs.ext }}" ]; then
             ext=${{ steps.info.outputs.ext }}
             exts=(${ext//,/ })
             for item in ${exts[@]}
