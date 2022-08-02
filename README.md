@@ -46,7 +46,7 @@ jun       | ×    |"0"             | 仅7.0.1-42218 版本可以选择jun模式�
   - {"platform":"DS3622xs+", "map":"1, 10", "usb":"0xa4a5, 0x0525"}  
   - {"platform":"DS3622xs+", "version":"7.1.0-42661", "sn":"1980PDN002189", "mac":"001132888A95", "ext":"r8125"}  
   - {"platform":"DS3622xs+", "version":"7.0.1-42218", "jun":"1", "mac":"001132888A95, 001132888A96", "ext":"r8125, tg3"}  
-  - {"platform":"DS929+", "version":"7.0.1-42218", "dtb": "https://github.com/wjz304/Redpill_CustomBuild/files/9235785/ds920p.zip", "ext":"r8125"}  
+  - {"platform":"DS920+", "version":"7.0.1-42218", "dtb": "https://github.com/wjz304/Redpill_CustomBuild/files/9235785/ds920p.zip", "ext":"r8125"}  
   - {  
       "platform":"DS3622xs+",  
       "version":"7.0.1-42218",  
