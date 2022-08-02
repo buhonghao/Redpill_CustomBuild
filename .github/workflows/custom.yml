@@ -453,11 +453,7 @@ jobs:
                     },
                     "synoinfo": {
                         "internalportcfg": "0xffff",
-                        "maxlanport": "7",
-                        "maxdisks": "9",
-                        "support_bde_internal_10g": "no",
-                        "support_disk_compatibility": "no",
-                        "support_memory_compatibility": "no"
+                        "maxlanport": "7"
                     },
                     "ramdisk_copy": {}
                 }
@@ -501,12 +497,6 @@ jobs:
                     if len(usbs) == 2:
                         config["extra_cmdline"]["pid"] = usbs[0]
                         config["extra_cmdline"]["vid"] = usbs[1]
-
-                if '${{ steps.info.outputs.platform }}' in ['DS918+', 'DS920+']:
-                    config["synoinfo"]["maxdisks"] = "9"
-
-                if '${{ steps.info.outputs.platform }}' in ['DS3615xs', 'DS3617xs', 'DS3622xs+']:
-                    config["synoinfo"]["maxdisks"] = "36"
 
                 print(json.dumps(config, indent=4))
 
