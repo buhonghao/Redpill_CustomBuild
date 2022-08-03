@@ -11,7 +11,7 @@
 在本项目 Issues 中创建问题，按需填写即可发起定制构建，参考示例[issues#1](https://github.com/wjz304/Redpill_CustomBuild/issues/1)  
 
 构建成功 Issues 会自动 closed。  
-构建失败 后请调整参数重新创建 Issues发起重新构建（每个 Issues 只会触发一次编译）。  
+构建失败 后请调整参数重新创建Issues发起重新构建, 或者修改body后 Close Issue + Reopen 重新触发。（触发编译：open, reopen）。  
 ext 存在兼容性问题, 添加是请与型号和版本对应, 并酌情添加 (不恰当的例子：r8125 不支持 DS920+ 的 7.0.1-42218 版本, 添加会编译失败)  
 
 
@@ -61,11 +61,7 @@ jun       | ×    |"0"             | 仅7.0.1-42218 版本可以选择jun模式�
 2. ext 当前使用 pocopico 库。
 3. 驱动默认集成 acpid, misc, virtio, dtb-static(only DS920+)。
 4. SN&MAC算号使用 pocopico 的脚本。
-5. custom.gz 解压有概率乱码, 脑袋疼....
-
-
-
-
+5. 最新支持body换行和自动去除控制字符，但是json格式错误无法处理，
 
 ## 鸣谢
 https://github.com/RedPill-TTG/redpill-load  
