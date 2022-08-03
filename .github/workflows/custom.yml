@@ -154,25 +154,54 @@ jobs:
 
           python -m pip install --upgrade pip setuptools
 
-      - name: Get Issues
+      - name: Get Issues Info
         if: github.event_name == 'issues'
+        id: get-issues
+        uses: actions/github-script@v6
+        with:
+          script: |
+            var issuenumber = ${{ toJSON(github.event.issue.number) }};
+            var issueauth = ${{ toJSON(github.event.issue.user.login) }};
+            var issuetitle = ${{ toJSON(github.event.issue.title) }};
+            var issuebody = ${{ toJSON(github.event.issue.body) }};
+
+            // '<???>': 替换一次; '/<???>/g': 替换全局; '/<???>/gi': 替换全局并忽略大小写; 
+            issuetitle = issuetitle.replace(/\u000A/g, "");  // \n 换行符
+            issuetitle = issuetitle.replace(/\u000D/g, "");  // \r 回车
+
+            issuebody = issuebody.replace(/\u0008/g, "");  // \b Backspace
+            issuebody = issuebody.replace(/\u0009/g, "");  // \t Tab
+            issuebody = issuebody.replace(/\u000A/g, "");  // \n 换行符
+            issuebody = issuebody.replace(/\u000B/g, "");  // \v 垂直制表符
+            issuebody = issuebody.replace(/\u000C/g, "");  // \f 换页
+            issuebody = issuebody.replace(/\u000D/g, "");  // \r 回车
+            //issuebody = issuebody.replace(/\u0022/g, "");  // \" 双引号 (")
+            //issuebody = issuebody.replace(/\u0027/g, "");  // \' 单引号 (')
+            //issuebody = issuebody.replace(/\u005C/g, "");  // \\ 反斜杠 (\)
+            issuebody = issuebody.replace(/\u00A0/g, "");  //    不间断空格
+            issuebody = issuebody.replace(/\u2028/g, "");  //    行分隔符
+            issuebody = issuebody.replace(/\u2029/g, "");  //    段落分隔符
+            issuebody = issuebody.replace(/\uFEFF/g, "");  //    字节顺序标记
+
+            core.setOutput("issuenumber", JSON.stringify(issuenumber));
+            core.setOutput("issueauth", JSON.stringify(issueauth));
+            core.setOutput("issuetitle", JSON.stringify(issuetitle));
+            core.setOutput("issuebody", JSON.stringify(issuebody));
+
+      - name: Set Issues Info
+        if: github.event_name == 'issues' && success()
         run: |
-          issuenumber=${{ github.event.issue.number }}
-          issueauth=${{ github.event.issue.user.login }}
-          issuetitle=$(sed -E 's/[[:space:]|[:punct:]]/_/g' <<<'${{ github.event.issue.title }}')
-          issuebody=$(echo '${{ github.event.issue.body }}' | tr '\r' ' ' | tr '\n' ' ')
+          echo "issuenumber: ${{ steps.get-issues.outputs.issuenumber }}"
+          echo "issueauth:   ${{ steps.get-issues.outputs.issueauth }}"
+          echo "issuetitle:  ${{ steps.get-issues.outputs.issuetitle }}"
+          echo "issuebody:   ${{ steps.get-issues.outputs.issuebody }}"
 
-          echo ${issuenumber}
-          echo ${issueauth}
-          echo ${issuetitle}
-          echo ${issuebody}
+          echo "issuenumber=${{ steps.get-issues.outputs.issuenumber }}" >> $GITHUB_ENV
+          echo "issueauth=${{ steps.get-issues.outputs.issueauth }}" >> $GITHUB_ENV
+          echo "issuetitle=${{ steps.get-issues.outputs.issuetitle }}" >> $GITHUB_ENV
+          echo "issuebody=${{ steps.get-issues.outputs.issuebody }}" >> $GITHUB_ENV
 
-          echo "issuenumber=${issuenumber}" >> $GITHUB_ENV
-          echo "issueauth=${issueauth}" >> $GITHUB_ENV
-          echo "issuetitle=${issuetitle}" >> $GITHUB_ENV
-          echo "issuebody=${issuebody}" >> $GITHUB_ENV
-
-      - name: Get Info
+      - name: Get Build Info
         uses: jannekem/run-python-script-action@v1.2
         id: info
         with:
@@ -381,7 +410,7 @@ jobs:
                 set_output('exp', exp)
                 set_output('jun', jun)
 
-      - name: Echo Info
+      - name: Echo Build Info
         run: |
           echo "issues:    ${{ steps.info.outputs.issues }}"
           echo "iscustom:  ${{ steps.info.outputs.iscustom }}"
@@ -397,7 +426,7 @@ jobs:
           echo "exp:       ${{ steps.info.outputs.exp }}"
           echo "jun:       ${{ steps.info.outputs.jun }}"
 
-      - name: Add labels
+      - name: Add Issues labels
         if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true'
         uses: actions-cool/issues-helper@v3
         with:
@@ -406,7 +435,7 @@ jobs:
           issue-number: ${{ env.issuenumber }}
           labels: 'custom'
 
-      - name: Create comment
+      - name: Create Issues comment
         if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true'
         uses: actions-cool/issues-helper@v3
         with:
@@ -423,7 +452,7 @@ jobs:
             > ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           emoji: heart
 
-      - name: Create comment
+      - name: Create Issues comment
         if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'false'
         uses: actions-cool/issues-helper@v3
         with:
@@ -442,7 +471,7 @@ jobs:
             > 
           emoji: confused
 
-      - name: config
+      - name: Create Config File
         if: steps.info.outputs.iscustom == 'true'
         uses: jannekem/run-python-script-action@v1.2
         with:
@@ -650,7 +679,7 @@ jobs:
             redpill-load/user_config.json
             redpill-load/images/*.img
 
-      - name: Create comment
+      - name: Create Issues Comment
         if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true' && success()
         uses: actions-cool/issues-helper@v3
         with:
@@ -667,7 +696,7 @@ jobs:
             > ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           emoji: hooray
 
-      - name: Close issue
+      - name: Close Issues
         if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true' && success()
         uses: actions-cool/issues-helper@v3
         with:
@@ -675,7 +704,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ env.issuenumber }}
 
-      - name: Create comment
+      - name: Create Issues Comment
         if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true' && failure()
         uses: actions-cool/issues-helper@v3
         with:
