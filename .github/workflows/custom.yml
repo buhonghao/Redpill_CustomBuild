@@ -679,6 +679,18 @@ jobs:
             redpill-load/user_config.json
             redpill-load/images/*.img
 
+      - name: Generate release tag
+        if: steps.info.outputs.iscustom == 'false'
+        run: |
+          if [ ${{ steps.info.outputs.issues }} == 'true' ]; then
+            echo "### ${{ env.issueauth }}'s Redpill Custom" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### $(echo "$GITHUB_REPOSITORY" | awk -F / '{print $1}')'s Redpill Custom" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢  " >> $GITHUB_STEP_SUMMARY
+          echo "您自定义 Redpill 所填写的信息无法解析, 请参考模板并请重新发起定制。  " >> $GITHUB_STEP_SUMMARY
+          echo "error info: ${{ steps.info.outputs.errinfo }}  " >> $GITHUB_STEP_SUMMARY
+
       - name: Create Issues Comment
         if: steps.info.outputs.issues == 'true' && steps.info.outputs.iscustom == 'true' && success()
         uses: actions-cool/issues-helper@v3
@@ -720,3 +732,4 @@ jobs:
             Your customized Redpill build failed. Please click the URL below to view the details. Please close this issue by yourself and re create an issue after adjustment to initiate the rebuild.
             > ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           emoji: hooray
+
