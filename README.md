@@ -8,7 +8,7 @@
 
 ## 说明  
 方式一：  
-在本项目 Issues 中创建问题，按需填写即可发起定制构建。【👉[图文说明](https://github.com/wjz304/Redpill_CustomBuild/guide/Issues.md)】
+在本项目 Issues 中创建问题，按需填写即可发起定制构建。【👉[图文说明](https://github.com/wjz304/Redpill_CustomBuild/blob/main/guide/Issues.md)】
 【👉[参考示例 issues#1](https://github.com/wjz304/Redpill_CustomBuild/issues/1)】  
 
 1. 构建成功 Issues 会自动 closed。  
