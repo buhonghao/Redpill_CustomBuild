@@ -238,32 +238,32 @@ jobs:
                                 iscustom = 'false'
                                 errinfo = 'body error, body is null'
                             else:
-                                if 'platform' in body: platform = body['platform']
-                                if 'version' in body: version = body['version']
-                                if 'map' in body: map = body['map']
-                                if 'dtb' in body: dtb = body['dtb']
-                                if 'sn' in body: sn = body['sn']
-                                if 'mac' in body: mac = body['mac']
-                                if 'usb' in body: usb = body['usb']
-                                if 'ext' in body: ext = body['ext']
-                                if 'exp' in body: exp = body['exp']
-                                if 'jun' in body: jun = body['jun']
+                                if 'platform' in body: platform = body['platform'].strip()
+                                if 'version' in body: version = body['version'].strip()
+                                if 'map' in body: map = body['map'].strip()
+                                if 'dtb' in body: dtb = body['dtb'].strip()
+                                if 'sn' in body: sn = body['sn'].strip()
+                                if 'mac' in body: mac = body['mac'].strip()
+                                if 'usb' in body: usb = body['usb'].strip()
+                                if 'ext' in body: ext = body['ext'].strip()
+                                if 'exp' in body: exp = body['exp'].strip()
+                                if 'jun' in body: jun = body['jun'].strip()
                         except Exception as err:
                             iscustom = 'false'
                             errinfo = 'body error, {}.'.format(err)
                     else:
                         iscustom = 'false'
                 else:
-                    platform = '${{ inputs.platform }}'
-                    version = '${{ inputs.version }}'
-                    map = '${{ inputs.map }}'
-                    dtb = '${{ inputs.dtb }}'
-                    sn = '${{ inputs.sn }}'
-                    mac = '${{ inputs.mac }}'
-                    usb = '${{ inputs.usb }}'
-                    ext = '${{ inputs.ext }}'
-                    exp = '${{ inputs.exp }}'
-                    jun = '${{ inputs.jun }}'
+                    platform = '${{ inputs.platform }}'.strip()
+                    version = '${{ inputs.version }}'.strip()
+                    map = '${{ inputs.map }}'.strip()
+                    dtb = '${{ inputs.dtb }}'.strip()
+                    sn = '${{ inputs.sn }}'.strip()
+                    mac = '${{ inputs.mac }}'.strip()
+                    usb = '${{ inputs.usb }}'.strip()
+                    ext = '${{ inputs.ext }}'.strip()
+                    exp = '${{ inputs.exp }}'.strip()
+                    jun = '${{ inputs.jun }}'.strip()
 
 
                 if not platform in ['DS3615xs', 'DS3617xs', 'DS918+', 'DS920+', 'DS3622xs+']:
