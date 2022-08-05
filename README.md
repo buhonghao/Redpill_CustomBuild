@@ -8,7 +8,8 @@
 
 ## 说明  
 方式一：  
-在本项目 Issues 中创建问题，按需填写即可发起定制构建，参考示例[issues#1](https://github.com/wjz304/Redpill_CustomBuild/issues/1)  
+在本项目 Issues 中创建问题，按需填写即可发起定制构建。【👉[图文说明](https://github.com/wjz304/Redpill_CustomBuild/guide/Issues.md)】
+【👉[参考示例 issues#1](https://github.com/wjz304/Redpill_CustomBuild/issues/1)】  
 
 1. 构建成功 Issues 会自动 closed。  
 2. 构建失败 后请调整参数重新创建Issues发起重新构建, 或者修改body后 Close Issue + Reopen 重新触发。（触发编译：open, reopen）。  
@@ -18,6 +19,7 @@
 
 方式二：   
 fork 本项目 通过 Actions 填写相关参数进行构建。
+
 
 
 #### title:
